@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="color-scheme" content="light dark" />
+  <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#0a0c0f" />
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -469,7 +469,7 @@
     .flow-selection span { color: var(--muted); font-size: 13px; }
     .sankey .node { cursor: pointer; outline: none; transition: opacity .16s ease, filter .16s ease; }
     .sankey .band { transition: opacity .16s ease, filter .16s ease; }
-    .sankey.has-selection .node, .sankey.has-selection .band { opacity: .12; }
+    .sankey.has-selection .node, .sankey.has-selection .band { opacity: .15; }
     .sankey.has-selection .node.is-connected, .sankey.has-selection .band.is-connected { opacity: 1; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 45%, transparent)); }
     .sankey .node:focus-visible { stroke: var(--good); stroke-width: 5px; }
     .manual-assets-panel { padding: 18px; }
@@ -659,6 +659,66 @@
       .health-metric, .gym-block { border-right: 0; border-bottom: 1px solid var(--line); }
       .health-metric:last-child, .gym-block:last-child { border-bottom: 0; }
     }
+    /* Night-only identity, prominent portrait, premium controls, CSV desk and branded load state */
+    :root, html, html[data-theme="night"] {
+      color-scheme: dark;
+      --bg: #080a0c; --surface: #0e1114; --surface-2: #15191d; --surface-3: #20252a;
+      --ink: #f1f1ed; --muted: #a1a5a8; --faint: #737a80; --line: #292e33;
+      --accent: #e23b34; --accent-ink: #fff; --good: #3fd08a; --warn: #e23b34; --bad: #f05a52;
+    }
+    .utility { justify-content: flex-start; }
+    .brand-lockup { justify-content: space-between; gap: 28px; }
+    .brand-identity { display: flex; align-items: center; min-width: 0; gap: 18px; }
+    .headshot { width: 112px; height: 112px; border-color: color-mix(in srgb, var(--ink) 28%, var(--line)); box-shadow: 0 0 0 7px var(--surface-2), 0 18px 48px rgba(0,0,0,.38); }
+    .premium-editor { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)) minmax(220px,.72fr); gap: 14px; padding: 20px; }
+    .premium-editor label { display: grid; gap: 8px; }
+    .premium-output { display: grid; align-content: center; padding: 16px 18px; background: var(--surface-2); border-left: 3px solid var(--accent); }
+    .premium-output span { color: var(--muted); font: 600 10px "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .05em; }
+    .premium-output strong { margin-top: 7px; font: 700 30px "Archivo Narrow", sans-serif; }
+    .csv-importer { padding: 22px; }
+    .csv-picker { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: 14px; }
+    .csv-picker label { display: grid; gap: 9px; }
+    .csv-picker input[type="file"] { width: 100%; min-height: 48px; padding: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 500 13px "IBM Plex Mono", monospace; }
+    .csv-summary { display: none; grid-template-columns: repeat(2, minmax(0,1fr)); margin-top: 20px; border: 1px solid var(--line); }
+    .csv-summary.is-visible { display: grid; }
+    .csv-summary div { padding: 16px; }
+    .csv-summary div + div { border-left: 1px solid var(--line); }
+    .csv-summary span { display: block; color: var(--muted); font-size: 12px; }
+    .csv-summary strong { display: block; margin-top: 6px; font: 700 23px "Archivo Narrow", sans-serif; }
+    .csv-results { margin-top: 18px; }
+    .csv-results[hidden] { display: none; }
+    .csv-empty { margin: 18px 0 0; padding: 18px; color: var(--muted); border: 1px dashed var(--line); }
+    .metric-list { display: flex; flex-wrap: wrap; gap: 6px 12px; color: var(--muted); }
+    .metric-list b { color: var(--ink); font-weight: 600; }
+    .load-screen { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; background: #080a0c; color: #f1f1ed; transition: opacity .55s ease, visibility .55s ease; }
+    .load-screen.is-ready { opacity: 0; visibility: hidden; pointer-events: none; }
+    .load-lockup { width: min(360px, calc(100% - 48px)); text-align: center; }
+    .load-mark { width: 86px; height: 86px; margin: 0 auto 24px; color: var(--accent); animation: loadPulse 1.8s ease-in-out infinite; }
+    .load-mark path { fill: none; stroke: currentColor; stroke-width: 5; stroke-linejoin: miter; stroke-dasharray: 260; stroke-dashoffset: 260; animation: markDraw 1.45s cubic-bezier(.65,0,.25,1) forwards; }
+    .load-title { margin: 0; font: 600 42px/.9 "Cormorant Garamond", Georgia, serif; letter-spacing: -.035em; }
+    .load-subtitle { margin-top: 11px; color: var(--muted); font: 600 9px "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .2em; }
+    .load-track { position: relative; height: 1px; margin-top: 30px; overflow: hidden; background: var(--line); }
+    .load-track::after { content: ""; position: absolute; inset: 0; width: 42%; background: var(--accent); animation: loadSweep 1.15s ease-in-out infinite; }
+    @keyframes markDraw { to { stroke-dashoffset: 0; } }
+    @keyframes loadPulse { 50% { opacity: .68; } }
+    @keyframes loadSweep { from { transform: translateX(-110%); } to { transform: translateX(340%); } }
+    @media (max-width:760px) {
+      .brand-lockup { align-items: center; gap: 14px; }
+      .brand-identity { gap: 10px; }
+      .headshot { width: 88px; height: 88px; box-shadow: 0 0 0 5px var(--surface-2); }
+      .premium-editor, .csv-picker { grid-template-columns: 1fr; }
+      .csv-summary { grid-template-columns: 1fr; }
+      .csv-summary div + div { border-left: 0; border-top: 1px solid var(--line); }
+    }
+    @media (max-width:480px) {
+      .brand-lockup { align-items: flex-start; }
+      .headshot { width: 74px; height: 74px; }
+      .wordmark { font-size: 43px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .load-mark, .load-mark path, .load-track::after { animation: none; }
+      .load-mark path { stroke-dashoffset: 0; }
+    }
   </style>
     <style>
     #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;
@@ -837,8 +897,8 @@
   }
   // Cache-busting: the vault is re-encrypted on every deploy (new salt), so a
   // cached vault.json would fail PIN unlock with a confusing "Wrong PIN".
-  // 232bc9ce6e8c is replaced at build time with a hash of the vault data.
-  fetch("vault.json?v=232bc9ce6e8c").then(function (r) {
+  // f93ce153c836 is replaced at build time with a hash of the vault data.
+  fetch("vault.json?v=f93ce153c836").then(function (r) {
     if (!r.ok) throw new Error("vault.json missing");
     return r.json();
   }).then(start).catch(function () {
@@ -872,14 +932,6 @@ function initDashboard() {
           activate(button.getAttribute('data-jump'));
           var focus = document.getElementById(button.getAttribute('data-focus'));
           if (focus) focus.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-      });
-      document.querySelectorAll('.themes button').forEach(function (button) {
-        button.addEventListener('click', function () {
-          var theme = button.getAttribute('data-theme');
-          if (theme === 'auto') document.documentElement.removeAttribute('data-theme');
-          else document.documentElement.setAttribute('data-theme', theme);
-          document.querySelectorAll('.themes button').forEach(function (item) { item.classList.toggle('active', item === button); });
         });
       });
       var filterButtons = document.querySelectorAll('.filter button');
@@ -981,30 +1033,85 @@ function initDashboard() {
         [totalInput, debtInput, investInput].forEach(function (input) { input.addEventListener('input', function () { updatePlan(input); }); });
         updatePlan();
       });
+
+      var premiumEditor = document.querySelector('.premium-editor');
+      var premiumSelf = document.getElementById('prem-self');
+      var premiumOffice = document.getElementById('prem-office');
+      function updatePremiumMath() {
+        var own = Math.max(Number(premiumSelf.value) || Number(premiumSelf.min), Number(premiumSelf.min));
+        var office = Math.max(Number(premiumOffice.value) || Number(premiumOffice.min), Number(premiumOffice.min));
+        var ownRate = Number(premiumEditor.dataset.ownRate);
+        var officeRate = Number(premiumEditor.dataset.officeRate);
+        var ownQuota = Number(premiumEditor.dataset.ownQuota);
+        var officeQuota = Number(premiumEditor.dataset.officeQuota);
+        var ownCommission = own * ownRate;
+        var officeCommission = office * officeRate;
+        var commission = ownCommission + officeCommission;
+        var totalPremium = own + office;
+        var ownShare = commission ? ownCommission / commission * 100 : Number(premiumSelf.min);
+        var officeShare = commission ? officeCommission / commission * 100 : Number(premiumOffice.min);
+        var ownQuotaPct = ownQuota ? Math.min(100, own / ownQuota * 100) : Number(premiumSelf.min);
+        var officeQuotaPct = officeQuota ? Math.min(100, totalPremium / officeQuota * 100) : Number(premiumOffice.min);
+        document.getElementById('premium-estimate').textContent = formatMoney(commission);
+        document.getElementById('premium-total').textContent = formatMoney(totalPremium);
+        document.getElementById('premium-production-copy').textContent = formatMoney(own) + ' personally closed + ' + formatMoney(office) + ' additional office premium.';
+        document.getElementById('commission-total').textContent = formatMoney(commission);
+        document.getElementById('commission-copy').textContent = formatMoney(own) + ' own × ' + (ownRate * 100).toFixed(2) + '% = ' + formatMoney(ownCommission) + '. ' + formatMoney(office) + ' office premium × ' + (officeRate * 100).toFixed(2) + '% = ' + formatMoney(officeCommission) + '.';
+        document.getElementById('commission-chart-estimate').textContent = formatMoney(commission) + ' estimate';
+        var stack = document.getElementById('commission-stack');
+        stack.setAttribute('aria-label', formatMoney(ownCommission) + ' own production commission and ' + formatMoney(officeCommission) + ' office override');
+        stack.querySelector('.stack-own').style.width = ownShare + '%';
+        stack.querySelector('.stack-override').style.width = officeShare + '%';
+        document.getElementById('commission-own-legend').textContent = 'Own · ' + formatMoney(ownCommission);
+        document.getElementById('commission-office-legend').textContent = 'Override · ' + formatMoney(officeCommission);
+        document.getElementById('own-quota-label').textContent = 'Own · ' + formatMoney(own) + ' / ' + formatMoney(ownQuota);
+        document.getElementById('office-quota-label').textContent = 'Office · ' + formatMoney(totalPremium) + ' / ' + formatMoney(officeQuota);
+        document.getElementById('own-quota-bar').style.width = ownQuotaPct + '%';
+        document.getElementById('office-quota-bar').style.width = officeQuotaPct + '%';
+        document.getElementById('own-quota-pct').textContent = ownQuotaPct.toFixed(1).replace('.0', '') + '%';
+        document.getElementById('office-quota-pct').textContent = officeQuotaPct.toFixed(1).replace('.0', '') + '%';
+      }
+      [premiumSelf, premiumOffice].forEach(function (input) { input.addEventListener('input', updatePremiumMath); });
+      updatePremiumMath();
+
       var flow = document.querySelector('#command .sankey');
       var selectedNode = '';
-      function selectFlow(node) {
+      function renderFlowSelection(nextNode) {
         var readout = document.getElementById('flow-selection');
-        selectedNode = selectedNode === node.dataset.node ? '' : node.dataset.node;
+        selectedNode = nextNode || '';
         flow.classList.toggle('has-selection', Boolean(selectedNode));
-        flow.querySelectorAll('[data-node], [data-edge]').forEach(function (item) {
-          var connected = !selectedNode || item.dataset.node === selectedNode || (item.dataset.edge || '').split(' ').indexOf(selectedNode) !== -1;
+        flow.querySelectorAll('[data-node]').forEach(function (item) {
+          var active = item.dataset.node === selectedNode;
+          item.classList.toggle('is-connected', !selectedNode || active);
+          item.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        flow.querySelectorAll('[data-edge]').forEach(function (item) {
+          var connected = !selectedNode || (item.dataset.edge || '').split(/\s+/).indexOf(selectedNode) !== -1;
           item.classList.toggle('is-connected', connected);
         });
-        if (selectedNode) {
-          readout.querySelector('b').textContent = node.dataset.label;
-          readout.querySelector('span').textContent = node.dataset.total + ' · connected flow isolated';
+        var selected = selectedNode ? flow.querySelector('[data-node="' + selectedNode + '"]') : null;
+        if (selected) {
+          readout.querySelector('b').textContent = selected.dataset.label;
+          readout.querySelector('span').textContent = selected.dataset.total + ' · connected flows isolated';
         } else {
           readout.querySelector('b').textContent = 'All flows';
-          readout.querySelector('span').textContent = 'Select a node to isolate its connected money flow.';
+          readout.querySelector('span').textContent = 'Click a node to isolate its flows.';
         }
       }
       if (flow) {
-        flow.querySelectorAll('[data-node]').forEach(function (node) {
-          node.addEventListener('click', function (event) { event.stopPropagation(); selectFlow(node); });
-          node.addEventListener('keydown', function (event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectFlow(node); } });
+        flow.addEventListener('click', function (event) {
+          var node = event.target.closest('[data-node]');
+          if (node && flow.contains(node)) renderFlowSelection(selectedNode === node.dataset.node ? '' : node.dataset.node);
+          else renderFlowSelection('');
         });
-        flow.addEventListener('click', function () { if (selectedNode) selectFlow(flow.querySelector('[data-node="' + selectedNode + '"]')); });
+        flow.addEventListener('keydown', function (event) {
+          var node = event.target.closest('[data-node]');
+          if (node && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            renderFlowSelection(selectedNode === node.dataset.node ? '' : node.dataset.node);
+          }
+        });
+        renderFlowSelection('');
       }
       document.addEventListener('click', function (event) {
         var selectable = event.target.closest('.selectable');
@@ -1170,6 +1277,130 @@ function initDashboard() {
         label.append(field, target); card.append(remove, title, link, quote, label); watchGrid.appendChild(card); wireWatchCard(card);
         tickerInput.value = ''; nameInput.value = '';
       });
+      function parseCsv(text) {
+        var grid = [];
+        var row = [];
+        var field = '';
+        var quoted = false;
+        for (var index = 0; index < text.length; index += 1) {
+          var character = text[index];
+          var following = text[index + 1];
+          if (character === '"' && quoted && following === '"') { field += '"'; index += 1; }
+          else if (character === '"') quoted = !quoted;
+          else if (character === ',' && !quoted) { row.push(field); field = ''; }
+          else if ((character === '\n' || character === '\r') && !quoted) {
+            if (character === '\r' && following === '\n') index += 1;
+            row.push(field); field = '';
+            if (row.some(function (cell) { return cell.trim(); })) grid.push(row);
+            row = [];
+          } else field += character;
+        }
+        row.push(field);
+        if (row.some(function (cell) { return cell.trim(); })) grid.push(row);
+        return grid;
+      }
+      function normalizedHeader(value) { return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, ''); }
+      function findHeader(headers, candidates) {
+        var normalized = headers.map(normalizedHeader);
+        for (var candidateIndex = 0; candidateIndex < candidates.length; candidateIndex += 1) {
+          var exact = normalized.indexOf(candidates[candidateIndex]);
+          if (exact !== -1) return exact;
+        }
+        for (var headerIndex = 0; headerIndex < normalized.length; headerIndex += 1) {
+          if (candidates.some(function (candidate) { return normalized[headerIndex].indexOf(candidate) !== -1; })) return headerIndex;
+        }
+        return -1;
+      }
+      function normalizeCsvRows(grid, sourceName) {
+        if (grid.length < 2) return [];
+        var headers = grid[0].map(function (header) { return header.trim(); });
+        var locations = {
+          date: findHeader(headers, ['date', 'startdate', 'starttime', 'workoutdate', 'activitydate', 'timestamp', 'day']),
+          activity: findHeader(headers, ['activity', 'activitytype', 'workout', 'workoutname', 'exercise', 'exercisename', 'type', 'description', 'meal', 'food']),
+          calories: findHeader(headers, ['calories', 'calorie', 'energyburned', 'caloriesburned', 'kcal']),
+          duration: findHeader(headers, ['duration', 'workoutduration', 'activityduration', 'minutes', 'elapsedtime']),
+          strain: findHeader(headers, ['strain', 'daystrain', 'activitystrain']),
+          recovery: findHeader(headers, ['recovery', 'recoveryscore', 'recoverypercentage'])
+        };
+        return grid.slice(1).filter(function (cells) { return cells.some(function (cell) { return cell.trim(); }); }).map(function (cells) {
+          var raw = {};
+          headers.forEach(function (header, cellIndex) { raw[header || ('Column ' + (cellIndex + 1))] = (cells[cellIndex] || '').trim(); });
+          function valueAt(location) { return location >= 0 ? (cells[location] || '').trim() : ''; }
+          return {
+            date: valueAt(locations.date), activity: valueAt(locations.activity), calories: valueAt(locations.calories),
+            duration: valueAt(locations.duration), strain: valueAt(locations.strain), recovery: valueAt(locations.recovery),
+            source: sourceName || 'CSV import', raw: raw
+          };
+        });
+      }
+      function displayDate(value) {
+        if (!value) return '—';
+        var parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+      function renderBodyCsv(rows) {
+        var dataBlock = document.getElementById('body-csv-data');
+        var emptyState = document.getElementById('body-csv-empty');
+        var summary = document.getElementById('body-csv-summary');
+        var results = document.getElementById('body-csv-results');
+        var tableBody = document.getElementById('body-csv-rows');
+        dataBlock.textContent = JSON.stringify(rows);
+        tableBody.replaceChildren();
+        if (!rows.length) {
+          emptyState.hidden = false;
+          summary.classList.remove('is-visible');
+          results.hidden = true;
+          document.getElementById('body-csv-count').textContent = '0';
+          document.getElementById('body-csv-range').textContent = '—';
+          return;
+        }
+        emptyState.hidden = true;
+        summary.classList.add('is-visible');
+        results.hidden = false;
+        document.getElementById('body-csv-count').textContent = String(rows.length);
+        var dated = rows.map(function (item) { return new Date(item.date); }).filter(function (date) { return !Number.isNaN(date.getTime()); }).sort(function (a, b) { return a - b; });
+        document.getElementById('body-csv-range').textContent = dated.length ? displayDate(dated[0]) + ' — ' + displayDate(dated[dated.length - 1]) : 'Dates not detected';
+        document.getElementById('body-csv-source').textContent = rows[0].source || 'CSV import';
+        rows.slice().sort(function (a, b) {
+          var first = new Date(a.date).getTime(); var second = new Date(b.date).getTime();
+          if (Number.isNaN(first) || Number.isNaN(second)) return 0;
+          return second - first;
+        }).slice(0, 20).forEach(function (item) {
+          var entry = document.createElement('tr');
+          var date = document.createElement('td'); date.dataset.label = 'Date'; date.textContent = displayDate(item.date);
+          var activity = document.createElement('td'); activity.dataset.label = 'Activity'; activity.textContent = item.activity || 'Entry';
+          var metrics = document.createElement('td'); metrics.dataset.label = 'Key metrics'; metrics.className = 'metric-list';
+          [['Calories', item.calories], ['Duration', item.duration], ['Strain', item.strain], ['Recovery', item.recovery]].forEach(function (metric) {
+            if (!metric[1]) return;
+            var pair = document.createElement('span'); var label = document.createElement('b'); label.textContent = metric[0] + ': ';
+            pair.append(label, document.createTextNode(metric[1])); metrics.appendChild(pair);
+          });
+          if (!metrics.childNodes.length) metrics.textContent = 'No key metrics detected';
+          entry.append(date, activity, metrics); tableBody.appendChild(entry);
+        });
+      }
+      window.__bodyCsvImport = function (rows) { renderBodyCsv(Array.isArray(rows) ? rows : []); };
+      document.getElementById('body-csv-file').addEventListener('change', function (event) {
+        var file = event.target.files && event.target.files[0];
+        if (!file) return;
+        file.text().then(function (text) { window.__bodyCsvImport(normalizeCsvRows(parseCsv(text), file.name)); });
+      });
+      document.getElementById('body-csv-clear').addEventListener('click', function () {
+        document.getElementById('body-csv-file').value = '';
+        window.__bodyCsvImport([]);
+      });
+      try { window.__bodyCsvImport(JSON.parse(document.getElementById('body-csv-data').textContent || '[]')); }
+      catch (error) { window.__bodyCsvImport([]); }
+
+      var loadScreen = document.getElementById('load-screen');
+      window.addEventListener('load', function () {
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(function () {
+            loadScreen.classList.add('is-ready');
+            window.setTimeout(function () { loadScreen.remove(); }, 700);
+          });
+        });
+      });
       updateBalanceSheet();
     })();
   
@@ -1178,93 +1409,135 @@ function initDashboard() {
 "use strict";
 var KEY="cicerohq.v1";
 function load(){try{var s=JSON.parse(localStorage.getItem(KEY));return s&&typeof s==="object"?s:{};}catch(e){return{};}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 var S=load();
 S.targets=S.targets||{};S.tasks=S.tasks||{};S.assets=S.assets||[];
-S.wlAdded=S.wlAdded||[];S.wlRemoved=S.wlRemoved||[];S.wlOrder=S.wlOrder||null;
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
-function fireInput(el){try{el.dispatchEvent(new Event("input",{bubbles:true}));}catch(e){}}
-function num(v){var n=parseFloat(v);return isFinite(n)?n:0;}
-var apple=document.getElementById("apple-balance");
-if(apple){
-  if(typeof S.apple==="number"&&isFinite(S.apple)){apple.value=S.apple;fireInput(apple);}
-  apple.addEventListener("input",function(){S.apple=num(apple.value);save();});
-}
-var addBtn=document.getElementById("add-asset"),aName=document.getElementById("asset-name"),aVal=document.getElementById("asset-value"),aList=document.getElementById("manual-asset-list");
-function snapAssets(){
-  var items=[];
-  if(!aList)return items;
-  Array.prototype.forEach.call(aList.querySelectorAll("li"),function(li){
-    if(li.classList.contains("empty-row"))return;
-    var n=li.querySelector("span"),v=li.querySelector("strong");
-    if(!n||!v)return;
-    items.push({name:n.textContent,value:num(v.textContent.replace(/[^0-9.]/g,""))});
+S.wlAdded=S.wlAdded||[];S.wlRemoved=S.wlRemoved||[];S.wlOrder=S.wlOrder||[];
+S.debtSplits=S.debtSplits||{};
+function fire(el,ev){try{el.dispatchEvent(new Event(ev,{bubbles:true}));}catch(e){}}
+function setVal(el,v){if(!el)return;el.value=v;fire(el,"input");fire(el,"change");}
+
+/* ---------- restore ---------- */
+function restore(){
+  // Apple Card balance
+  if(S.apple!==undefined&&S.apple!==null){var a=document.getElementById("apple-balance");setVal(a,S.apple);}
+  // plan check + debt splits (supports one or many plan inputs)
+  if(S.planCheck!==undefined){var pc=document.getElementById("plan-check");setVal(pc,S.planCheck);}
+  Object.keys(S.debtSplits).forEach(function(id){var el=document.getElementById(id);setVal(el,S.debtSplits[id]);});
+  var dp=document.getElementById("debt-percent");
+  if(dp&&S.debtPct!==undefined)setVal(dp,S.debtPct);
+  // career premium inputs
+  if(S.premSelf!==undefined)setVal(document.getElementById("prem-self"),S.premSelf);
+  if(S.premOffice!==undefined)setVal(document.getElementById("prem-office"),S.premOffice);
+  // watchlist target prices
+  Object.keys(S.targets).forEach(function(sym){
+    var el=document.querySelector('.target-input[data-symbol="'+sym+'"]');setVal(el,S.targets[sym]);
   });
-  return items;
-}
-if(addBtn&&aName&&aVal&&S.assets.length){
-  S.assets.forEach(function(a){aName.value=a.name;aVal.value=a.value;addBtn.click();});
-}
-if(aList){new MutationObserver(function(){S.assets=snapAssets();save();}).observe(aList,{childList:true});}
-Array.prototype.forEach.call(document.querySelectorAll('input[type="checkbox"][data-task]'),function(cb){
-  var k=cb.getAttribute("data-task");
-  if(S.tasks[k])cb.checked=true;
-  cb.addEventListener("change",function(){S.tasks[k]=cb.checked;save();});
-});
-Array.prototype.forEach.call(document.querySelectorAll(".target-input[data-symbol]"),function(inp){
-  var k=inp.getAttribute("data-symbol");
-  if(S.targets[k]!=null&&S.targets[k]!=="")inp.value=S.targets[k];
-  inp.addEventListener("input",function(){
-    var v=inp.value.trim();
-    if(v==="")delete S.targets[k];else S.targets[k]=num(v);
-    save();
+  // task checkmarks
+  Object.keys(S.tasks).forEach(function(id){
+    var el=document.querySelector('input[type=checkbox][data-task="'+id+'"]');
+    if(el){el.checked=!!S.tasks[id];fire(el,"change");}
   });
-});
-var planCheck=document.getElementById("plan-check"),debtPct=document.getElementById("debt-percent");
-if(planCheck&&typeof S.planCheck==="number"&&isFinite(S.planCheck))planCheck.value=S.planCheck;
-if(debtPct){
-  if(typeof S.debtPct==="number"&&isFinite(S.debtPct))debtPct.value=S.debtPct;
-  fireInput(debtPct);
-  var savePlan=function(){S.debtPct=num(debtPct.value);if(planCheck)S.planCheck=num(planCheck.value);save();};
-  debtPct.addEventListener("input",savePlan);
-  if(planCheck)planCheck.addEventListener("input",savePlan);
-}
-function wlKey(card){
-  if(card.dataset&&card.dataset.key)return card.dataset.key;
-  var h=card.querySelector("h3");
-  return h?h.textContent.replace(/^\$\s*/,"").trim():"";
-}
-var grid=document.getElementById("watchlist-grid"),wlForm=document.getElementById("watch-add-form");
-function wlCards(){return grid?Array.prototype.slice.call(grid.querySelectorAll(".watch-card")):[];}
-if(grid&&wlForm){
-  if(S.wlRemoved.length){wlCards().forEach(function(c){if(S.wlRemoved.indexOf(wlKey(c))!==-1)c.remove();});}
-  var tIn=document.getElementById("watch-ticker"),nIn=document.getElementById("watch-name");
-  S.wlAdded.forEach(function(a){
-    var exists=wlCards().some(function(c){return wlKey(c)===a.ticker;});
-    if(!exists&&tIn&&nIn){tIn.value=a.ticker;nIn.value=a.name;wlForm.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));}
-  });
-  if(S.wlOrder&&S.wlOrder.length){
-    var byKey={};
-    wlCards().forEach(function(c){byKey[wlKey(c)]=c;});
-    S.wlOrder.forEach(function(k){if(byKey[k])grid.appendChild(byKey[k]);});
+  // manual assets (replay through the page's own add flow; supports negatives)
+  if(S.assets.length){
+    var nameEl=document.getElementById("asset-name")||document.querySelector('[data-asset-name]');
+    var valEl=document.getElementById("asset-value")||document.querySelector('[data-asset-value]');
+    var addBtn=document.getElementById("asset-add")||document.querySelector('[data-asset-add]');
+    var form=addBtn&&addBtn.closest?addBtn.closest("form"):null;
+    S.assets.forEach(function(it){
+      if(!nameEl||!valEl)return;
+      // skip if already present
+      var list=document.getElementById("manual-asset-list");
+      if(list&&list.textContent.indexOf(it.name)>-1)return;
+      nameEl.value=it.name;valEl.value=it.value;
+      fire(nameEl,"input");fire(valEl,"input");
+      if(addBtn){try{addBtn.click();}catch(e){}}
+      else if(form){try{fire(form,"submit");}catch(e){}}
+    });
   }
-  wlForm.addEventListener("submit",function(){
-    var t=tIn.value.trim().toUpperCase().replace(/[^A-Z0-9.-]/g,""),n=nIn.value.trim();
-    if(!t||!n)return;
-    if(!S.wlAdded.some(function(a){return a.ticker===t;}))S.wlAdded.push({ticker:t,name:n});
-    save();
-  },true);
-  grid.addEventListener("click",function(e){
-    var r=e.target&&e.target.closest?e.target.closest(".remove-card"):null;
-    if(!r)return;
-    var card=r.closest(".watch-card"),k=card?wlKey(card):"";
-    if(!k)return;
-    if(S.wlRemoved.indexOf(k)===-1)S.wlRemoved.push(k);
-    S.wlAdded=S.wlAdded.filter(function(a){return a.ticker!==k;});
-    if(S.wlOrder)S.wlOrder=S.wlOrder.filter(function(x){return x!==k;});
-    save();
-  },true);
-  grid.addEventListener("dragend",function(){setTimeout(function(){S.wlOrder=wlCards().map(wlKey);save();},60);});
+  // body CSV data (poll for the page's import hook)
+  if(S.bodyCsv&&S.bodyCsv.length){
+    var tries=0;
+    var iv=setInterval(function(){
+      tries++;
+      if(window.__bodyCsvImport){clearInterval(iv);try{window.__bodyCsvImport(S.bodyCsv);}catch(e){}}
+      else if(tries>40)clearInterval(iv);
+    },250);
+  }
 }
+
+/* ---------- hooks ---------- */
+function hook(){
+  function on(id,fn){var el=document.getElementById(id);if(el){el.addEventListener("input",fn);el.addEventListener("change",fn);}}
+  on("apple-balance",function(e){var v=parseFloat(e.target.value);S.apple=isNaN(v)?null:v;save();});
+  on("plan-check",function(e){S.planCheck=e.target.value;save();});
+  on("debt-percent",function(e){S.debtPct=e.target.value;save();});
+  on("prem-self",function(e){S.premSelf=e.target.value;save();});
+  on("prem-office",function(e){S.premOffice=e.target.value;save();});
+  // any extra debt-split inputs across plans
+  document.querySelectorAll("input[data-debt-split]").forEach(function(el){
+    var id=el.id||el.getAttribute("data-debt-split");
+    el.addEventListener("input",function(){S.debtSplits[id]=el.value;save();});
+    el.addEventListener("change",function(){S.debtSplits[id]=el.value;save();});
+  });
+  document.querySelectorAll(".target-input[data-symbol]").forEach(function(el){
+    var f=function(){S.targets[el.getAttribute("data-symbol")]=el.value;save();};
+    el.addEventListener("input",f);el.addEventListener("change",f);
+  });
+  document.querySelectorAll('input[type=checkbox][data-task]').forEach(function(el){
+    el.addEventListener("change",function(){S.tasks[el.getAttribute("data-task")]=el.checked;save();});
+  });
+  // manual assets: snapshot the list whenever it changes (keeps negatives)
+  var list=document.getElementById("manual-asset-list");
+  if(list){
+    var snap=function(){
+      var out=[];
+      list.querySelectorAll("[data-asset-item],li,.asset-row").forEach(function(row){
+        var n=row.querySelector("[data-asset-name],.asset-name");
+        var v=row.querySelector("[data-asset-value],.asset-value");
+        var name=n?n.textContent.trim():(row.getAttribute("data-name")||"");
+        var val=v?v.textContent.trim():(row.getAttribute("data-value")||"");
+        val=parseFloat(String(val).replace(/[^0-9.\-]/g,""));
+        if(name&&!isNaN(val))out.push({name:name,value:val});
+      });
+      // fallback: parse rows as "name ... value"
+      if(!out.length){
+        list.querySelectorAll("li").forEach(function(li){
+          var t=li.textContent;
+          var m=t.match(/(.+?)\s*\$?\s*(-?[\d,]+(?:\.\d{2})?)\s*$/);
+          if(m)out.push({name:m[1].trim(),value:parseFloat(m[2].replace(/,/g,""))});
+        });
+      }
+      S.assets=out;save();
+    };
+    new MutationObserver(snap).observe(list,{childList:true,subtree:true});
+    snap();
+  }
+  // watchlist add/remove/order
+  document.addEventListener("submit",function(e){
+    if(e.target&&e.target.id==="watch-add-form"){setTimeout(saveWl,300);}
+  },true);
+  document.addEventListener("click",function(e){
+    if(e.target&&e.target.closest&&e.target.closest(".remove-card"))setTimeout(saveWl,300);
+  },true);
+  document.addEventListener("dragend",function(){setTimeout(saveWl,300);},true);
+  function saveWl(){
+    var grid=document.getElementById("watchlist-grid");if(!grid)return;
+    var order=[];
+    grid.querySelectorAll("[data-key]").forEach(function(c){order.push(c.getAttribute("data-key"));});
+    S.wlOrder=order;save();
+  }
+  // body CSV: persist parsed rows whenever the page updates its data block
+  var csvBlock=document.getElementById("body-csv-data");
+  if(csvBlock){
+    new MutationObserver(function(){
+      try{var rows=JSON.parse(csvBlock.textContent||"[]");S.bodyCsv=rows;save();}catch(e){}
+    }).observe(csvBlock,{childList:true,characterData:true,subtree:true});
+  }
+}
+
+try{restore();}catch(e){}
+try{hook();}catch(e){}
 })();
 
 
