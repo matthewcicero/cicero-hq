@@ -835,7 +835,10 @@
       });
   })();
   }
-  fetch("vault.json").then(function (r) {
+  // Cache-busting: the vault is re-encrypted on every deploy (new salt), so a
+  // cached vault.json would fail PIN unlock with a confusing "Wrong PIN".
+  // 232bc9ce6e8c is replaced at build time with a hash of the vault data.
+  fetch("vault.json?v=232bc9ce6e8c").then(function (r) {
     if (!r.ok) throw new Error("vault.json missing");
     return r.json();
   }).then(start).catch(function () {
