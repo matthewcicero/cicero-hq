@@ -1238,12 +1238,16 @@
     .wire-archive .wire-feed { border-top:0; }
     .buying-soon-panel { margin-top:0; }
     .buying-soon-list { list-style:none; margin:0; padding:0; }
-    .buying-soon-row { display:grid; grid-template-columns:110px minmax(180px,1fr) minmax(120px,.55fr) minmax(130px,.55fr) 44px; gap:14px; align-items:center; padding:15px 18px; border-bottom:1px solid var(--line); }
+    .buying-soon-row { display:grid; grid-template-columns:110px minmax(180px,1fr) minmax(150px,.65fr) minmax(130px,.55fr) 96px 44px; gap:14px; align-items:center; padding:15px 18px; border-bottom:1px solid var(--line); }
     .buying-soon-row:last-child { border-bottom:0; }
     .buying-soon-row .plan-ticker { color:var(--accent); font:700 14px 'IBM Plex Mono',monospace; }
     .buying-soon-row .plan-name { color:var(--ink); font-weight:600; }
     .buying-soon-row .plan-target, .buying-soon-row time { font:600 12px 'IBM Plex Mono',monospace; }
+    .buying-soon-row .plan-target { color:var(--ink); }
+    .buying-soon-row .plan-target small { display:block; margin-bottom:4px; color:var(--faint); font:600 9px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.05em; }
     .buying-soon-row time { color:var(--muted); }
+    .buying-soon-link { min-height:36px; display:inline-flex; align-items:center; justify-content:center; padding:8px 10px; border:1px solid var(--line); color:var(--accent); font:700 10px 'IBM Plex Mono',monospace; text-decoration:none; }
+    .buying-soon-link:hover, .buying-soon-link:focus-visible { border-color:var(--accent); color:var(--ink); }
     .buying-soon-remove { width:44px; height:44px; border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer; font-size:21px; }
     .buying-soon-remove:hover, .buying-soon-remove:focus-visible { color:var(--bad); border-color:var(--bad); }
     .buying-soon-empty { padding:22px 18px; color:var(--muted); font-size:13px; }
@@ -1252,8 +1256,9 @@
       .wire-item { padding-right:76px; }
       .wire-bookmark { top:12px; right:8px; min-width:54px; }
       .buying-soon-row { grid-template-columns:minmax(0,1fr) auto; gap:7px 12px; }
-      .buying-soon-row .plan-name, .buying-soon-row .plan-target, .buying-soon-row time { grid-column:1; }
-      .buying-soon-row .buying-soon-remove { grid-column:2; grid-row:1 / span 4; }
+      .buying-soon-row .plan-name, .buying-soon-row .plan-target, .buying-soon-row time, .buying-soon-row .buying-soon-link { grid-column:1; }
+      .buying-soon-row .buying-soon-link { width:max-content; margin-top:4px; }
+      .buying-soon-row .buying-soon-remove { grid-column:2; grid-row:1 / span 5; }
     }
   </style>
     <style>
@@ -1331,7 +1336,7 @@
     </div>
   </div>
   <div id="vault" hidden></div>
-  <script src="app.js?v=7f126c6d9650"></script>
+  <script src="app.js?v=d492de47403c"></script>
 <script>
 (function () {
   "use strict";
@@ -1449,8 +1454,8 @@
   }
   // Cache-busting: the vault is re-encrypted on every deploy (new salt), so a
   // cached vault.json would fail PIN unlock with a confusing "Wrong PIN".
-  // a1a01a1475c2 is replaced at build time with a hash of the vault data.
-  fetch("vault.json?v=a1a01a1475c2").then(function (r) {
+  // 0c1b3725fbf2 is replaced at build time with a hash of the vault data.
+  fetch("vault.json?v=0c1b3725fbf2").then(function (r) {
     if (!r.ok) throw new Error("vault.json missing");
     return r.json();
   }).then(start).catch(function () {
