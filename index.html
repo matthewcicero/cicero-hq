@@ -252,7 +252,7 @@
       .themes button { padding: 6px 5px; }
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-  .office-pin-wrap{background:none;border:none;}</style>
+  </style>
   <style>
     /* Cicero HQ / shadow-corporate operating layer */
     :root {
@@ -1061,6 +1061,66 @@
       .office-card { transition:none; }
       .pin--on { transform:none; }
     }
+    /* Capital expansion */
+    .connected-account-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; padding:1px; background:var(--line); }
+    .connected-account { min-width:0; padding:18px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px 20px; background:var(--surface); }
+    .connected-account.company-money { background:var(--surface-2); box-shadow:inset 3px 0 0 var(--accent); }
+    .connected-account-head { min-width:0; }
+    .account-institution { display:block; margin-bottom:6px; color:var(--faint); font:600 9px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.09em; }
+    .connected-account h3 { margin:0; color:var(--ink); font:700 18px/1.05 'Archivo Narrow',sans-serif; text-transform:uppercase; letter-spacing:.035em; }
+    .connected-account-meta { display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; margin-top:8px; color:var(--muted); font-size:11px; }
+    .connected-account-type { font:600 10px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.055em; }
+    .company-money-badge { display:inline-block; padding:4px 6px; border:1px solid var(--accent); color:var(--accent); font:700 8px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.075em; }
+    .connected-account-balance { align-self:start; text-align:right; white-space:nowrap; color:var(--ink); font:700 21px 'Archivo Narrow',sans-serif; letter-spacing:.02em; }
+    .connected-account-balance.unknown { color:var(--muted); font:600 11px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.04em; }
+    .connected-account-note { grid-column:1 / -1; margin:0; padding-top:10px; border-top:1px solid var(--line); color:var(--faint); font-size:10px; line-height:1.5; }
+    .capital-expansion-lower { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.6fr); gap:14px; margin-top:14px; }
+    .expansion-checklist { list-style:none; margin:0; padding:0; }
+    .expansion-checklist li { display:grid; grid-template-columns:minmax(145px,.38fr) minmax(0,1fr); gap:18px; align-items:start; padding:16px 18px; border-bottom:1px solid var(--line); }
+    .expansion-checklist li:last-child { border-bottom:0; }
+    .expansion-checklist h3 { margin:0 0 8px; color:var(--ink); font:700 16px 'Archivo Narrow',sans-serif; text-transform:uppercase; letter-spacing:.04em; }
+    .expansion-status { display:inline-block; padding:5px 7px; color:var(--muted); background:var(--surface-2); border-color:var(--line); }
+    .expansion-action { margin:0; color:var(--muted); font-size:12px; line-height:1.55; }
+    .capital-earmark { min-height:100%; padding:20px; border:1px solid var(--line); border-top:3px solid var(--accent); background:var(--surface); display:flex; flex-direction:column; justify-content:space-between; gap:24px; }
+    .capital-earmark span { color:var(--accent); font:700 9px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.09em; }
+    .capital-earmark strong { display:block; color:var(--ink); font:700 26px/1 'Archivo Narrow',sans-serif; letter-spacing:.025em; }
+    .capital-earmark p { margin:9px 0 0; color:var(--muted); font-size:12px; line-height:1.55; }
+    .retirement-panel { margin-top:14px; }
+    .retirement-body { display:grid; grid-template-columns:minmax(240px,.65fr) minmax(0,1.35fr); }
+    .retirement-identity { padding:22px; border-right:1px solid var(--line); background:var(--surface-2); }
+    .retirement-identity .origin { margin-bottom:22px; }
+    .retirement-identity h3 { margin:0; font:700 22px/1.05 'Archivo Narrow',sans-serif; text-transform:uppercase; letter-spacing:.035em; }
+    .retirement-identity p { margin:8px 0 0; color:var(--muted); font-size:11px; line-height:1.55; }
+    .retirement-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; padding:22px; }
+    .retirement-fields label { display:grid; align-content:start; gap:7px; }
+    .retirement-fields .full-field { grid-column:1 / -1; }
+    .retirement-fields input[disabled] { color:var(--ink); background:var(--surface-2); opacity:1; }
+    .retirement-rollup { display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--line); }
+    .retirement-rollup div { padding:16px 18px; border-right:1px solid var(--line); }
+    .retirement-rollup div:last-child { border-right:0; }
+    .retirement-rollup span { display:block; color:var(--faint); font:600 9px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.07em; }
+    .retirement-rollup strong { display:block; margin-top:8px; color:var(--ink); font:700 17px 'Archivo Narrow',sans-serif; }
+    .retirement-mode-note { margin:0; padding:12px 18px; border-top:1px solid var(--line); color:var(--faint); font-size:10px; line-height:1.5; }
+    .capital-guidance-grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr); gap:14px; margin-top:14px; }
+    .capital-guidance { padding:20px; }
+    .capital-guidance h3, .capital-disclaimer h3 { margin:0; font:700 17px 'Archivo Narrow',sans-serif; text-transform:uppercase; letter-spacing:.04em; }
+    .capital-guidance ul { margin:16px 0 0; padding:0; list-style:none; counter-reset:capital-thought; }
+    .capital-guidance li { counter-increment:capital-thought; display:grid; grid-template-columns:28px minmax(0,1fr); gap:10px; padding:11px 0; border-top:1px solid var(--line); color:var(--muted); font-size:12px; line-height:1.55; }
+    .capital-guidance li::before { content:counter(capital-thought,decimal-leading-zero); color:var(--accent); font:600 10px 'IBM Plex Mono',monospace; }
+    .capital-disclaimer { padding:20px; border:1px solid var(--line); background:var(--surface-2); }
+    .capital-disclaimer h3 { color:var(--muted); }
+    .capital-disclaimer p { margin:14px 0 0; color:var(--muted); font-size:12px; line-height:1.65; }
+    @media (max-width:760px) {
+      .connected-account-list, .capital-expansion-lower, .retirement-body, .capital-guidance-grid { grid-template-columns:1fr; }
+      .connected-account { grid-template-columns:minmax(0,1fr); gap:12px; }
+      .connected-account-balance { text-align:left; }
+      .expansion-checklist li { grid-template-columns:1fr; gap:10px; }
+      .retirement-identity { border-right:0; border-bottom:1px solid var(--line); }
+      .retirement-fields, .retirement-rollup { grid-template-columns:1fr; }
+      .retirement-fields .full-field { grid-column:auto; }
+      .retirement-rollup div { border-right:0; border-bottom:1px solid var(--line); }
+      .retirement-rollup div:last-child { border-bottom:0; }
+    }
   </style>
     <style>
     #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;
@@ -1137,7 +1197,7 @@
     </div>
   </div>
   <div id="vault" hidden></div>
-  <script src="app.js?v=87e5a5345861"></script>
+  <script src="app.js?v=1da1bca8effb"></script>
 <script>
 (function () {
   "use strict";
@@ -1255,8 +1315,8 @@
   }
   // Cache-busting: the vault is re-encrypted on every deploy (new salt), so a
   // cached vault.json would fail PIN unlock with a confusing "Wrong PIN".
-  // 86f0be210132 is replaced at build time with a hash of the vault data.
-  fetch("vault.json?v=86f0be210132").then(function (r) {
+  // 6962b007c6ed is replaced at build time with a hash of the vault data.
+  fetch("vault.json?v=6962b007c6ed").then(function (r) {
     if (!r.ok) throw new Error("vault.json missing");
     return r.json();
   }).then(start).catch(function () {
