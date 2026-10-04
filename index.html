@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@600;700&amp;family=Cormorant+Garamond:wght@500;600&amp;family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
-  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23080a0c'/%3E%3Cpath d='M18 14h18v8H26v20h10v8H18V14Zm28 0v8H36v6h10v22H28v-8h10V36H28V14h18Z' fill='%23e23b34'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -958,7 +958,11 @@
     .office-source-note { color:var(--faint); font-size:10px; line-height:1.55; margin:0; }
     .pin { min-width:26px; height:26px; padding:0 7px; display:grid; place-items:center; border-radius:50%; background:var(--ink); color:var(--surface); border:2px solid var(--surface); box-shadow:0 3px 12px rgba(0,0,0,.35); font:700 11px 'IBM Plex Mono',monospace; cursor:pointer; }
     .pin--on { background:var(--accent); color:var(--accent-ink); transform:scale(1.12); }
-    .maplibregl-ctrl-attrib { font-size:9px!important; }
+    .leaflet-container { background:var(--surface-2); font-family:'IBM Plex Sans',sans-serif; }
+    .leaflet-control-attribution { font-size:9px!important; }
+    .leaflet-div-icon.office-pin-icon { background:transparent; border:0; }
+    .leaflet-control-zoom a { background:var(--surface); color:var(--ink); border-color:var(--line); }
+    .leaflet-control-zoom a:hover, .leaflet-control-zoom a:focus { background:var(--surface-2); color:var(--accent); }
     @media (max-width: 880px) {
       .commission-actual, .office-map-shell { grid-template-columns:1fr; }
       .office-map-summary { border-left:0; border-top:1px solid var(--line); }
@@ -1074,13 +1078,26 @@
     }
     /* Capital rollup */
     .capital-rollup { margin-top:16px; border-top:3px solid var(--accent); }
-    .capital-rollup-head { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(260px,.85fr); gap:24px; align-items:end; padding:26px 24px 24px; }
+    .capital-rollup-head { display:grid; grid-template-columns:1fr; gap:20px; align-items:start; padding:26px 24px 24px; }
+    .capital-rollup-intro { grid-column:1 / -1; }
     .capital-rollup-head h2 { margin:0; font:700 clamp(34px,4.5vw,58px)/.92 'Archivo Narrow',sans-serif; text-transform:uppercase; letter-spacing:.025em; }
     .capital-rollup-head p { max-width:640px; margin:13px 0 0; color:var(--muted); font-size:13px; line-height:1.55; }
-    .capital-rollup-total { text-align:right; }
+    .capital-scope-toggle { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:min(100%,430px); border:1px solid var(--line); background:var(--surface-2); }
+    .capital-scope { min-height:43px; padding:9px 14px; border:0; border-right:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer; font:700 10px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.065em; }
+    .capital-scope:last-child { border-right:0; }
+    .capital-scope:hover, .capital-scope:focus-visible { color:var(--ink); box-shadow:inset 0 -2px 0 var(--accent); }
+    .capital-scope.active { color:var(--ink); background:var(--surface); box-shadow:inset 0 -3px 0 var(--accent); }
+    .capital-rollup-total { text-align:left; }
     .capital-rollup-total span { display:block; color:var(--faint); font:600 10px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.08em; }
     .capital-rollup-total strong { display:block; margin-top:8px; color:var(--ink); font:700 clamp(38px,5vw,64px)/.9 'Archivo Narrow',sans-serif; letter-spacing:.015em; }
+    .capital-rollup-total.combined-summary { display:grid; grid-template-columns:1fr auto; gap:7px 18px; align-items:baseline; }
+    .capital-rollup-total.combined-summary span { text-align:left; }
+    .capital-rollup-total.combined-summary strong { margin:0; font-size:19px; }
+    .capital-rollup-total.combined-summary .combined-total-label,
+    .capital-rollup-total.combined-summary .combined-total-value { padding-top:9px; border-top:1px solid var(--line); color:var(--ink); }
+    .capital-rollup-total.combined-summary .combined-total-value { font-size:clamp(34px,4.5vw,54px); }
     .capital-rollup-filters { display:flex; flex-wrap:wrap; gap:6px; padding:13px 18px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:var(--surface-2); }
+    .capital-rollup-filters[hidden] { display:none; }
     .capital-filter { min-height:40px; padding:8px 12px; border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer; font:700 10px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.05em; }
     .capital-filter:hover, .capital-filter:focus-visible { color:var(--ink); border-color:var(--accent); }
     .capital-filter.active { color:var(--ink); border-color:var(--accent); box-shadow:inset 0 -2px 0 var(--accent); }
@@ -1095,18 +1112,53 @@
     .capital-rollup-empty { margin:0; padding:22px 18px; color:var(--muted); font-size:12px; }
     .capital-rollup-company { border-top:12px solid var(--bg); background:var(--surface-2); }
     .capital-rollup-company .capital-rollup-type { color:var(--accent); border-color:var(--accent); }
+    .capital-rollup-row.company-row { background:var(--surface-2); color:var(--muted); }
+    .capital-rollup-row.company-row .capital-rollup-name,
+    .capital-rollup-row.company-row .capital-rollup-balance { color:var(--muted); }
+    .capital-rollup-row.company-row .capital-rollup-type { color:var(--accent); border-color:var(--accent); }
+    .retirement-expansion-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+    .investment-tracker { min-width:0; display:flex; flex-direction:column; }
+    .investment-tracker .panel-head { align-items:flex-start; }
+    .tracker-body { display:grid; gap:15px; padding:20px; }
+    .tracker-balance { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+    .tracker-balance span { color:var(--faint); font:600 9px 'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.07em; }
+    .tracker-balance strong { color:var(--ink); font:700 28px/1 'Archivo Narrow',sans-serif; letter-spacing:.02em; text-align:right; }
+    .tracker-fields { display:grid; gap:13px; }
+    .tracker-fields label { display:grid; gap:7px; }
+    .tracker-help { margin:0; color:var(--faint); font-size:10px; line-height:1.5; }
+    .other-account-form { display:grid; grid-template-columns:minmax(0,1fr) minmax(110px,.55fr); gap:9px; }
+    .other-account-form button { grid-column:1 / -1; }
+    .other-account-list { list-style:none; margin:0; padding:0; border-top:1px solid var(--line); }
+    .other-account-list li { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:10px; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); font-size:12px; }
+    .other-account-list li:last-child { border-bottom:0; }
+    .other-account-list strong { white-space:nowrap; }
+    .other-account-list .empty-row { display:block; color:var(--muted); }
+    .tracker-remove { min-height:34px; padding:6px 8px; border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer; font:700 9px 'IBM Plex Mono',monospace; text-transform:uppercase; }
+    .tracker-remove:hover, .tracker-remove:focus-visible { color:var(--bad); border-color:var(--bad); }
+    @media (max-width:980px) {
+      .retirement-expansion-grid { grid-template-columns:1fr 1fr; }
+      .investment-tracker:last-child { grid-column:1 / -1; }
+    }
     @media (max-width:760px) {
       .capital-rollup-head { grid-template-columns:1fr; align-items:start; padding:22px 18px; }
+      .capital-rollup-intro { grid-column:auto; }
       .capital-rollup-total { text-align:left; }
       .capital-rollup-row { grid-template-columns:minmax(0,1fr) auto; gap:8px 12px; }
       .capital-rollup-institution, .capital-rollup-type { grid-column:1; }
       .capital-rollup-name { grid-column:1; }
       .capital-rollup-balance { grid-column:2; grid-row:1 / span 3; align-self:center; }
       .capital-rollup-company { border-top-width:9px; }
+      .retirement-expansion-grid { grid-template-columns:1fr; }
+      .investment-tracker:last-child { grid-column:auto; }
     }
     @media (max-width:440px) {
+      .capital-scope-toggle { grid-template-columns:1fr; }
+      .capital-scope { border-right:0; border-bottom:1px solid var(--line); }
+      .capital-scope:last-child { border-bottom:0; }
       .capital-rollup-row { grid-template-columns:1fr; }
       .capital-rollup-institution, .capital-rollup-name, .capital-rollup-type, .capital-rollup-balance { grid-column:1; grid-row:auto; text-align:left; }
+      .other-account-form { grid-template-columns:1fr; }
+      .other-account-form button { grid-column:auto; }
     }
     /* Capital expansion */
     .connected-account-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; padding:1px; background:var(--line); }
@@ -1279,7 +1331,7 @@
     </div>
   </div>
   <div id="vault" hidden></div>
-  <script src="app.js?v=08151e645dc1"></script>
+  <script src="app.js?v=7f126c6d9650"></script>
 <script>
 (function () {
   "use strict";
@@ -1397,8 +1449,8 @@
   }
   // Cache-busting: the vault is re-encrypted on every deploy (new salt), so a
   // cached vault.json would fail PIN unlock with a confusing "Wrong PIN".
-  // ffb225a24eeb is replaced at build time with a hash of the vault data.
-  fetch("vault.json?v=ffb225a24eeb").then(function (r) {
+  // a1a01a1475c2 is replaced at build time with a hash of the vault data.
+  fetch("vault.json?v=a1a01a1475c2").then(function (r) {
     if (!r.ok) throw new Error("vault.json missing");
     return r.json();
   }).then(start).catch(function () {
