@@ -10,6 +10,7 @@ function initDashboard() {
           item.classList.toggle('active', selected);
           item.setAttribute('aria-pressed', selected ? 'true' : 'false');
         });
+        if (target === 'career') window.setTimeout(initOfficeMap, 0);
       }
       navButtons.forEach(function (button) {
         button.addEventListener('click', function () {
@@ -559,6 +560,8 @@ function initDashboard() {
             var name = document.createElement('h4'); name.textContent = record.name;
             var company = document.createElement('div'); company.className = 'talent-company'; company.textContent = record.company;
             var role = document.createElement('p'); role.className = 'talent-role'; role.textContent = record.role;
+            var startDate = null;
+            if (record.startDate) { startDate = document.createElement('p'); startDate.className = 'talent-start'; startDate.textContent = 'Start · ' + record.startDate; }
             var meta = document.createElement('p'); meta.className = 'talent-meta'; meta.textContent = (record.source || 'Source not set') + ' · added ' + (record.dateAdded || '—');
             var notes = document.createElement('p'); notes.className = 'talent-notes'; notes.textContent = record.notes || 'No notes yet.';
             var actions = document.createElement('div'); actions.className = 'talent-card-actions';
@@ -567,7 +570,9 @@ function initDashboard() {
             stageSelect.addEventListener('change', function () { record.stage = stageSelect.value; commitTalent(); });
             var edit = document.createElement('button'); edit.type = 'button'; edit.textContent = 'Edit'; edit.dataset.talentId = record.id; edit.dataset.talentAction = 'edit'; edit.addEventListener('click', function () { openTalentEditor(record); });
             actions.append(stageSelect, edit);
-            card.append(name, company, role, meta, notes, actions);
+            card.append(name, company, role);
+            if (startDate) card.appendChild(startDate);
+            card.append(meta, notes, actions);
             card.addEventListener('dragstart', function () { card.classList.add('dragging'); card.dataset.dragging = 'true'; });
             card.addEventListener('dragend', function () { card.classList.remove('dragging'); delete card.dataset.dragging; });
             cards.appendChild(card);
@@ -688,6 +693,135 @@ function initDashboard() {
       document.getElementById('talent-network-svg').addEventListener('click', function (event) { var node = event.target.closest('.talent-node'); applyTalentNetworkSelection(node ? (selectedTalentNode === node.dataset.nodeKey ? '' : node.dataset.nodeKey) : ''); });
       document.getElementById('talent-network-svg').addEventListener('keydown', function (event) { var node = event.target.closest('.talent-node'); if (node && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); applyTalentNetworkSelection(selectedTalentNode === node.dataset.nodeKey ? '' : node.dataset.nodeKey); } });
 
+      var officePlaces = [
+        { label:'1518 Walnut', address:'1518 Walnut St', locality:'Philadelphia', region:'PA', lat:39.94955, lng:-75.16692, size:'1,946 SF', rent:'$3,730/mo', fit:'Comfortable · 162 SF/person', link:'https://www.google.com/maps/search/?api=1&query=1518%20Walnut%2C%201518%20Walnut%20St%2C%20Philadelphia%2C%20PA' },
+        { label:'1500 Walnut', address:'1500 Walnut St', locality:'Philadelphia', region:'PA', lat:39.94919, lng:-75.16630, size:'1,979 SF', rent:'$3,752/mo', fit:'Comfortable · 165 SF/person', link:'https://www.google.com/maps/search/?api=1&query=1500%20Walnut%2C%201500%20Walnut%20St%2C%20Philadelphia%2C%20PA' },
+        { label:'1528 Walnut · Suite 1400', address:'1528 Walnut St', locality:'Philadelphia', region:'PA', lat:39.94964, lng:-75.16742, size:'1,605 SF', rent:'$3,544/mo', fit:'Tight · 134 SF/person', link:'https://www.google.com/maps/search/?api=1&query=1528%20Walnut%2C%201528%20Walnut%20St%2C%20Philadelphia%2C%20PA' },
+        { label:'1420 Walnut', address:'1420 Walnut St', locality:'Philadelphia', region:'PA', lat:39.94932, lng:-75.16539, size:'1,500 SF', rent:'$3,250/mo', fit:'Tight · 125 SF/person', link:'https://www.google.com/maps/search/?api=1&query=1420%20Walnut%2C%201420%20Walnut%20St%2C%20Philadelphia%2C%20PA' },
+        { label:'1520 Locust · 10th floor', address:'1520 Locust St', locality:'Philadelphia', region:'PA', lat:39.94829, lng:-75.16719, size:'1,900 SF', rent:'$3,721/mo', fit:'Comfortable · 158 SF/person', link:'https://www.google.com/maps/search/?api=1&query=1520%20Locust%2C%201520%20Locust%20St%2C%20Philadelphia%2C%20PA' },
+        { label:'2133 Arch · Mulberry Atrium', address:'2133 Arch St', locality:'Philadelphia', region:'PA', lat:39.95623, lng:-75.17590, size:'1,104 SF', rent:'$2,438/mo', fit:'Below target · 92 SF/person', link:'https://www.google.com/maps/search/?api=1&query=2133%20Arch%2C%202133%20Arch%20St%2C%20Philadelphia%2C%20PA' },
+        { label:'255 S 17th · 13th floor', address:'255 S 17th St', locality:'Philadelphia', region:'PA', lat:39.94827, lng:-75.16941, size:'1,016 SF', rent:'$2,201/mo', fit:'Below target · 85 SF/person', link:'https://www.google.com/maps/search/?api=1&query=255%20S%2017th%2C%20255%20S%2017th%20St%2C%20Philadelphia%2C%20PA' },
+        { label:'1601 Walnut', address:'1601 Walnut St', locality:'Philadelphia', region:'PA', lat:39.95000, lng:-75.16769, size:'~1,500 SF', rent:'~$3,250/mo', fit:'Tight · ~125 SF/person', link:'https://www.google.com/maps/search/?api=1&query=1601%20Walnut%2C%201601%20Walnut%20St%2C%20Philadelphia%2C%20PA' }
+      ];
+      var officeMapInstance = null;
+      function selectOffice(index, scroll) {
+        if (index === null || index < 0 || index >= officePlaces.length) {
+          document.querySelectorAll('.office-card').forEach(function (card) { card.classList.remove('map-selected'); });
+          return;
+        }
+        var place = officePlaces[index];
+        document.getElementById('office-selected-number').textContent = String(index + 1);
+        document.getElementById('office-selected-title').textContent = place.label;
+        document.getElementById('office-selected-address').textContent = place.address + ' · Philadelphia, PA';
+        document.getElementById('office-selected-size').textContent = place.size;
+        document.getElementById('office-selected-rent').textContent = place.rent;
+        document.getElementById('office-selected-fit').textContent = place.fit;
+        document.getElementById('office-selected-link').href = place.link;
+        document.querySelectorAll('.office-card').forEach(function (card, cardIndex) { card.classList.toggle('map-selected', cardIndex === index); });
+        if (scroll) {
+          var card = document.querySelector('.office-card[data-office-index="' + index + '"]');
+          if (card) card.scrollIntoView({ block:'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        }
+      }
+      function initOfficeMap() {
+        if (officeMapInstance || !document.getElementById('career').classList.contains('active')) return;
+        var mapElement = document.getElementById('office-map');
+        function showFallback() {
+          officeMapInstance = null;
+          mapElement.innerHTML = '<div class="map-fallback">Interactive map unavailable. Use the eight property cards and their building links below.</div>';
+        }
+        if (!window.L) { showFallback(); return; }
+        try {
+          var map = L.map(mapElement, { scrollWheelZoom: false }).setView([39.9495, -75.1665], 14);
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd', maxZoom: 19
+          }).addTo(map);
+          var markers = officePlaces.map(function (place, index) {
+            var icon = L.divIcon({
+              className: 'office-pin-wrap',
+              html: '<div class="pin' + (index === 0 ? ' pin--on' : '') + '">' + (index + 1) + '</div>',
+              iconSize: [32, 32], iconAnchor: [16, 16]
+            });
+            var marker = L.marker([place.lat, place.lng], { icon: icon, title: place.label }).addTo(map);
+            marker.bindTooltip(place.label, { direction: 'top', offset: [0, -16] });
+            marker.on('click', function () { selectOffice(index, false); setOfficePin(index); });
+            return marker;
+          });
+          map.fitBounds(L.latLngBounds(officePlaces.map(function (pl) { return [pl.lat, pl.lng]; })).pad(0.3));
+          officeMapInstance = {
+            selectPlace: function (index) {
+              setOfficePin(index);
+              if (index !== null && markers[index]) { map.panTo(markers[index].getLatLng()); }
+            }
+          };
+          selectOffice(0, false);
+        } catch (e) { showFallback(); }
+      }
+      function setOfficePin(index) {
+        var pins = document.querySelectorAll('#office-map .pin');
+        for (var i = 0; i < pins.length; i++) { pins[i].classList.toggle('pin--on', i === index); }
+      }
+      document.querySelectorAll('.office-card').forEach(function (card) {
+        function choose() { var index = Number(card.getAttribute('data-office-index')); if (officeMapInstance) officeMapInstance.selectPlace(index); selectOffice(index, false); }
+        card.addEventListener('click', choose);
+        card.addEventListener('keydown', function (event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(); } });
+      });
+
+      var currency0 = new Intl.NumberFormat('en-US', { style:'currency', currency:'USD', maximumFractionDigits:0 });
+      function renderCommissionOutlook() {
+        var rows = Array.prototype.slice.call(document.querySelectorAll('.forecast-row'));
+        var rate = Math.max(0, Number(document.getElementById('commission-rate').value) || 0) / 100;
+        var downPayment = Math.max(0.01, Number(document.getElementById('commission-down-payment').value) || 17.5) / 100;
+        var points = [{ label:'Q3 2026', value:13646.59, actual:true, entered:true }];
+        rows.forEach(function (row) {
+          var existingInput = row.querySelector('.forecast-existing');
+          var newInput = row.querySelector('.forecast-new');
+          var entered = existingInput.value !== '' || newInput.value !== '';
+          var existingCash = Math.max(0, Number(existingInput.value) || 0);
+          var newCash = Math.max(0, Number(newInput.value) || 0);
+          var totalCash = existingCash + newCash;
+          var impliedPremium = newCash / downPayment;
+          var commission = totalCash * rate;
+          row.querySelector('.forecast-cash').textContent = entered ? currency0.format(totalCash) : '—';
+          row.querySelector('.forecast-premium').textContent = entered ? currency0.format(impliedPremium) : '—';
+          row.querySelector('.forecast-commission').textContent = entered ? currency0.format(commission) : '—';
+          points.push({ label:row.querySelector('.forecast-quarter').value.trim() || 'Forecast', value:commission, actual:false, entered:entered });
+        });
+        var svg = document.getElementById('commission-chart');
+        while (svg.firstChild) svg.removeChild(svg.firstChild);
+        var ns = 'http://www.w3.org/2000/svg';
+        function node(name, attrs, text) { var element = document.createElementNS(ns, name); Object.keys(attrs || {}).forEach(function (key) { element.setAttribute(key, attrs[key]); }); if (text !== undefined) element.textContent = text; svg.appendChild(element); return element; }
+        var maxValue = Math.max.apply(Math, points.filter(function (point) { return point.entered; }).map(function (point) { return point.value; }).concat([13646.59]));
+        var axisMax = Math.max(15000, Math.ceil(maxValue / 5000) * 5000);
+        var baseline = 242; var top = 30; var height = baseline - top;
+        [0,.5,1].forEach(function (ratio) { var y = baseline - height * ratio; node('line',{ x1:48,y1:y,x2:742,y2:y,class:'grid' }); node('text',{ x:4,y:y+4 }, currency0.format(axisMax * ratio)); });
+        var centers = [112,258,404,550,696]; var linePoints = [];
+        points.forEach(function (point, index) {
+          var barHeight = point.entered ? Math.max(point.value > 0 ? 3 : 0, point.value / axisMax * height) : 6;
+          var y = baseline - barHeight;
+          node('rect',{ x:centers[index]-32,y:y,width:64,height:barHeight,class:point.actual?'bar-actual':'bar-forecast',opacity:point.entered?'1':'.34' });
+          if (point.entered) { node('text',{ x:centers[index],y:Math.max(18,y-9),'text-anchor':'middle' }, currency0.format(point.value)); linePoints.push([centers[index], y]); }
+          else node('text',{ x:centers[index],y:baseline-11,'text-anchor':'middle' }, 'enter inputs');
+          node('text',{ x:centers[index],y:267,'text-anchor':'middle' }, point.label.slice(0,13));
+          node('text',{ x:centers[index],y:283,'text-anchor':'middle' }, point.actual ? 'actual' : 'forecast');
+        });
+        if (linePoints.length > 1) node('polyline',{ points:linePoints.map(function (point) { return point.join(','); }).join(' '),class:'forecast-line' });
+        linePoints.forEach(function (point) { node('circle',{ cx:point[0],cy:point[1],r:4,class:'forecast-dot' }); });
+      }
+      document.getElementById('commission-outlook').addEventListener('input', renderCommissionOutlook);
+      renderCommissionOutlook();
+
+      function updateDallasCosts() {
+        ['living','highrise'].forEach(function (group) {
+          var inputs = Array.prototype.slice.call(document.querySelectorAll('[data-cost-group="' + group + '"]'));
+          var entered = inputs.some(function (input) { return input.value !== ''; });
+          var total = inputs.reduce(function (sum, input) { return sum + Math.max(0, Number(input.value) || 0); }, 0);
+          document.getElementById(group + '-cost-total').textContent = entered ? currency0.format(total) + '/mo' : '—';
+        });
+      }
+      document.getElementById('dallas-costs').addEventListener('input', updateDallasCosts);
+
       var commandPalette = document.getElementById('command-palette');
       var commandSearch = document.getElementById('command-search');
       var commandResults = document.getElementById('command-results');
@@ -701,6 +835,9 @@ function initDashboard() {
         { label: 'Intelligence', detail: 'Open the Wire', type: 'Tab', run: function () { activate('intelligence'); } },
         { label: 'Watchlist', detail: 'Research and January plan', type: 'Tab', run: function () { activate('watchlist'); } },
         { label: 'Drive', detail: 'Goals and connections', type: 'Tab', run: function () { activate('drive'); } },
+        { label: 'Taxes', detail: 'NJ to TX domicile planning', type: 'Tab', run: function () { activate('taxes'); } },
+        { label: 'Dallas', detail: 'January relocation hub', type: 'Tab', run: function () { activate('dallas'); } },
+        { label: 'Flights', detail: 'Flight and travel desk · coming soon', type: 'Tab', run: function () { activate('flights'); } },
         { label: 'Body', detail: 'Health and data imports', type: 'Tab', run: function () { activate('health'); } },
         { label: 'Talent pipeline', detail: 'Career · people by stage', type: 'Section', run: function () { activate('career'); setTalentView('pipeline'); document.getElementById('talent-section').scrollIntoView(); } },
         { label: 'Talent network', detail: 'Career · company and person graph', type: 'Section', run: function () { activate('career'); setTalentView('network'); document.getElementById('talent-section').scrollIntoView(); } },
