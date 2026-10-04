@@ -421,11 +421,6 @@ function initDashboard() {
           bucket.classList.toggle('open', expanded); button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
         });
       });
-      document.querySelectorAll('.add-plan').forEach(function (button) {
-        button.addEventListener('click', function () {
-          var added = !button.classList.contains('added'); button.classList.toggle('added', added); button.textContent = added ? 'Added' : 'Add to plan';
-        });
-      });
       var injectedWatchlist = document.getElementById('watchlist');
       var watchTemplate = document.getElementById('watchlist-upgrade-template');
       if (!injectedWatchlist && watchTemplate) {
@@ -445,6 +440,9 @@ function initDashboard() {
           var links = document.createElement('div'); links.className = 'watch-links';
           trading.parentNode.insertBefore(links, trading); links.appendChild(trading);
           var schwab = document.createElement('a'); schwab.className = 'schwab-trade'; schwab.href = 'https://client.schwab.com/'; schwab.target = '_blank'; schwab.rel = 'noreferrer'; schwab.textContent = 'Trade'; links.appendChild(schwab);
+        }
+        if (!card.querySelector('.add-plan')) {
+          var planButton = document.createElement('button'); planButton.className = 'add-plan'; planButton.type = 'button'; planButton.textContent = 'Add to plan'; card.appendChild(planButton);
         }
         card.addEventListener('dragstart', function () { card.classList.add('dragging'); });
         card.addEventListener('dragend', function () { card.classList.remove('dragging'); });
@@ -482,7 +480,138 @@ function initDashboard() {
         var target = document.createElement('input'); target.className = 'target-input'; target.type = 'number'; target.inputMode = 'decimal'; target.dataset.symbol = ticker; target.placeholder = '—';
         label.append(field, target); card.append(remove, title, link, quote, label); watchGrid.appendChild(card); wireWatchCard(card);
         tickerInput.value = ''; nameInput.value = '';
+        renderBuyingSoon();
       });
+
+      var buyPlanDataBlock = document.getElementById('buy-plan-data');
+      var buyingSoonList = document.getElementById('buying-soon-list');
+      function readBuyingSoon() {
+        try {
+          var parsed = JSON.parse(buyPlanDataBlock.textContent || '[]');
+          return Array.isArray(parsed) ? parsed.filter(function (item) { return item && item.ticker; }) : [];
+        } catch (error) { return []; }
+      }
+      function localDateStamp() {
+        var today = new Date();
+        return [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
+      }
+      function planButtonHolding(button) {
+        var card = button.closest('.watch-card');
+        if (card) {
+          var cardTicker = String(card.dataset.key || '').toUpperCase();
+          var cardName = card.querySelector('h3 span');
+          return { ticker: cardTicker, name: cardName ? cardName.textContent.replace(/^\s*[—-]\s*/, '').trim() : cardTicker };
+        }
+        var row = button.closest('li');
+        var tickerNode = row ? row.querySelector('b') : null;
+        var ticker = tickerNode ? tickerNode.textContent.replace(/^\$/, '').trim().toUpperCase() : '';
+        var copy = row ? row.querySelector('span') : null;
+        var name = copy ? copy.textContent.split('·').slice(1).join('·').trim() : ticker;
+        return { ticker: ticker, name: name || ticker };
+      }
+      function renderBuyingSoon() {
+        var plan = readBuyingSoon();
+        buyingSoonList.replaceChildren();
+        document.getElementById('buying-soon-count').textContent = plan.length + ' position' + (plan.length === 1 ? '' : 's');
+        if (!plan.length) {
+          var empty = document.createElement('li'); empty.className = 'buying-soon-empty'; empty.textContent = 'Nothing queued yet. Use Add to plan from Watchlist.'; buyingSoonList.appendChild(empty);
+        }
+        plan.forEach(function (item) {
+          var row = document.createElement('li'); row.className = 'buying-soon-row';
+          var ticker = document.createElement('span'); ticker.className = 'plan-ticker'; ticker.textContent = '$' + String(item.ticker).toUpperCase();
+          var name = document.createElement('span'); name.className = 'plan-name'; name.textContent = item.name || item.ticker;
+          var target = document.createElement('strong'); target.className = 'plan-target positive';
+          var targetNumber = Number(item.target); target.textContent = item.target !== '' && Number.isFinite(targetNumber) ? formatMoney(targetNumber) : '—';
+          var date = document.createElement('time'); date.dateTime = item.addedAt || ''; date.textContent = item.addedAt || '—';
+          var remove = document.createElement('button'); remove.type = 'button'; remove.className = 'buying-soon-remove'; remove.setAttribute('aria-label', 'Remove ' + (item.name || item.ticker) + ' from buying soon'); remove.textContent = '×';
+          remove.addEventListener('click', function () {
+            var next = readBuyingSoon().filter(function (entry) { return String(entry.ticker).toUpperCase() !== String(item.ticker).toUpperCase(); });
+            buyPlanDataBlock.textContent = JSON.stringify(next); renderBuyingSoon();
+          });
+          row.append(ticker, name, target, date, remove); buyingSoonList.appendChild(row);
+        });
+        var selected = plan.map(function (item) { return String(item.ticker).toUpperCase(); });
+        injectedWatchlist.querySelectorAll('.add-plan').forEach(function (button) {
+          var holding = planButtonHolding(button); var added = selected.indexOf(holding.ticker) !== -1;
+          button.classList.toggle('added', added); button.textContent = added ? 'Added' : 'Add to plan'; button.setAttribute('aria-pressed', added ? 'true' : 'false'); button.setAttribute('aria-label', (added ? 'Added ' : 'Add ') + holding.ticker + ' to plan');
+        });
+      }
+      window.renderBuyingSoon = renderBuyingSoon;
+      window.__buyPlanImport = function (arr) { buyPlanDataBlock.textContent = JSON.stringify(arr || []); renderBuyingSoon(); };
+      injectedWatchlist.addEventListener('click', function (event) {
+        var button = event.target.closest('.add-plan');
+        if (!button || !injectedWatchlist.contains(button)) return;
+        var holding = planButtonHolding(button); if (!holding.ticker) return;
+        var targetInput = Array.from(watchGrid.querySelectorAll('.target-input')).find(function (input) { return String(input.dataset.symbol || '').toUpperCase() === holding.ticker; });
+        var next = readBuyingSoon();
+        var entry = { ticker: holding.ticker, name: holding.name, target: targetInput ? targetInput.value.trim() : '', addedAt: localDateStamp() };
+        var existingIndex = next.findIndex(function (item) { return String(item.ticker).toUpperCase() === holding.ticker; });
+        if (existingIndex === -1) next.push(entry); else next[existingIndex] = entry;
+        buyPlanDataBlock.textContent = JSON.stringify(next); renderBuyingSoon();
+      });
+      try { window.__buyPlanImport(JSON.parse(buyPlanDataBlock.textContent || '[]')); } catch (error) { window.__buyPlanImport([]); }
+
+      var intelSection = document.getElementById('intelligence');
+      var intelSavedDataBlock = document.getElementById('intel-saved-data');
+      var wireCurrent = document.getElementById('wire-current');
+      var wireArchive = document.getElementById('wire-archive');
+      var wireArchiveFeed = document.getElementById('wire-archive-feed');
+      var wireFilter = 'all';
+      var wireLinks = Array.from(wireCurrent.querySelectorAll('.wire-link'));
+      var expiryWindow = 30 * 24 * 60 * 60 * 1000;
+      wireLinks.forEach(function (link, index) {
+        var article = link.querySelector('.wire-item');
+        article.dataset.wcat = article.dataset.wcat || 'markets';
+        article.dataset.wid = article.dataset.wid || ('wire-' + (index + 1));
+        var bookmark = document.createElement('button'); bookmark.type = 'button'; bookmark.className = 'wire-bookmark'; bookmark.textContent = 'Save'; bookmark.setAttribute('aria-label', 'Save ' + article.querySelector('h3').textContent);
+        bookmark.addEventListener('click', function (event) {
+          event.preventDefault(); event.stopPropagation();
+          var saved = readIntelSaved(); var savedIndex = saved.indexOf(article.dataset.wid);
+          if (savedIndex === -1) saved.push(article.dataset.wid); else saved.splice(savedIndex, 1);
+          intelSavedDataBlock.textContent = JSON.stringify(saved); renderIntelSaved();
+        });
+        article.appendChild(bookmark);
+        var time = article.querySelector('time[datetime]');
+        var published = time ? new Date(time.getAttribute('datetime') + 'T00:00:00') : null;
+        var expired = published && !Number.isNaN(published.getTime()) && (Date.now() - published.getTime() > expiryWindow);
+        article.dataset.expired = expired ? 'true' : 'false';
+        if (expired) {
+          var badge = document.createElement('span'); badge.className = 'expired-badge'; badge.textContent = 'Expired'; article.querySelector('.wire-meta').appendChild(badge);
+          wireArchiveFeed.appendChild(link);
+        }
+      });
+      function readIntelSaved() {
+        try {
+          var parsed = JSON.parse(intelSavedDataBlock.textContent || '[]');
+          return Array.isArray(parsed) ? parsed.filter(function (item) { return typeof item === 'string'; }) : [];
+        } catch (error) { return []; }
+      }
+      function renderIntelSaved() {
+        var saved = readIntelSaved(); var currentVisible = 0; var archiveVisible = 0; var archiveTotal = 0;
+        wireLinks.forEach(function (link) {
+          var article = link.querySelector('.wire-item'); var isSaved = saved.indexOf(article.dataset.wid) !== -1;
+          var bookmark = article.querySelector('.wire-bookmark');
+          bookmark.classList.toggle('saved', isSaved); bookmark.textContent = isSaved ? 'Saved' : 'Save'; bookmark.setAttribute('aria-pressed', isSaved ? 'true' : 'false'); bookmark.setAttribute('aria-label', (isSaved ? 'Remove ' : 'Save ') + article.querySelector('h3').textContent);
+          var visible = wireFilter === 'all' || wireFilter === article.dataset.wcat || (wireFilter === 'saved' && isSaved);
+          link.hidden = !visible;
+          if (article.dataset.expired === 'true') { archiveTotal += 1; if (visible) archiveVisible += 1; }
+          else if (visible) currentVisible += 1;
+        });
+        document.getElementById('wire-archive-summary').textContent = 'Archive · ' + archiveTotal;
+        wireArchive.hidden = archiveVisible === 0;
+        if (wireFilter === 'saved' && archiveVisible > 0 && currentVisible === 0) wireArchive.open = true;
+        document.getElementById('wire-empty').hidden = currentVisible + archiveVisible > 0;
+      }
+      window.renderIntelSaved = renderIntelSaved;
+      window.__intelSavedImport = function (arr) { intelSavedDataBlock.textContent = JSON.stringify(arr || []); renderIntelSaved(); };
+      document.getElementById('wire-filters').addEventListener('click', function (event) {
+        var button = event.target.closest('[data-wire-filter]'); if (!button) return;
+        wireFilter = button.dataset.wireFilter;
+        document.querySelectorAll('[data-wire-filter]').forEach(function (item) { var active = item === button; item.classList.toggle('active', active); item.setAttribute('aria-pressed', active ? 'true' : 'false'); });
+        renderIntelSaved();
+      });
+      try { window.__intelSavedImport(JSON.parse(intelSavedDataBlock.textContent || '[]')); } catch (error) { window.__intelSavedImport([]); }
+
       function parseCsv(text) {
         var grid = [];
         var row = [];
@@ -977,15 +1106,15 @@ function initDashboard() {
     })();
   
 
-/* cicerohq.v1 persist shim (deploy-injected) */
 (function(){
 "use strict";
 var KEY="cicerohq.v1";
 function load(){try{var s=JSON.parse(localStorage.getItem(KEY));return s&&typeof s==="object"?s:{};}catch(e){return{};}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function save(){try{var cur=load();for(var k in S)cur[k]=S[k];localStorage.setItem(KEY,JSON.stringify(cur));}catch(e){}}
 var S=load();
 S.targets=S.targets||{};S.tasks=S.tasks||{};S.assets=S.assets||[];
 S.wlAdded=S.wlAdded||[];S.wlRemoved=S.wlRemoved||[];S.wlOrder=S.wlOrder||[];
+S.buyPlan=S.buyPlan||[];S.intelSaved=S.intelSaved||[];
 S.talent=S.talent||[];
 S.debtSplits=S.debtSplits||{};
 function fire(el,ev){try{el.dispatchEvent(new Event(ev,{bubbles:true}));}catch(e){}}
@@ -1108,6 +1237,26 @@ function hook(){
       try{var rows=JSON.parse(csvBlock.textContent||"[]");S.bodyCsv=rows;save();}catch(e){}
     }).observe(csvBlock,{childList:true,characterData:true,subtree:true});
   }
+  // buying plan + intel bookmarks: persist canonical JSON blocks; restore via import hooks.
+  // The artifact keeps all state in these blocks' textContent and never touches
+  // storage APIs itself; this shim (deploy-injected) is the only storage writer.
+  [["buy-plan-data","buyPlan","__buyPlanImport"],["intel-saved-data","intelSaved","__intelSavedImport"]].forEach(function(spec){
+    var id=spec[0], key=spec[1], hook=spec[2];
+    var blk=document.getElementById(id);
+    if(blk){
+      new MutationObserver(function(){
+        try{S[key]=JSON.parse(blk.textContent||"[]");save();}catch(e){}
+      }).observe(blk,{childList:true,characterData:true,subtree:true});
+    }
+    if(S[key]&&S[key].length){
+      var tries=0;
+      var iv=setInterval(function(){
+        tries++;
+        if(window[hook]){clearInterval(iv);try{window[hook](S[key]);}catch(e){}}
+        else if(tries>40)clearInterval(iv);
+      },250);
+    }
+  });
 }
 
 
