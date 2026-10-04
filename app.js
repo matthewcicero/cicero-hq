@@ -777,15 +777,19 @@ function initDashboard() {
           var row = document.createElement('li'); row.className = 'buying-soon-row';
           var ticker = document.createElement('span'); ticker.className = 'plan-ticker'; ticker.textContent = '$' + String(item.ticker).toUpperCase();
           var name = document.createElement('span'); name.className = 'plan-name'; name.textContent = item.name || item.ticker;
-          var target = document.createElement('strong'); target.className = 'plan-target positive';
-          var targetNumber = Number(item.target); target.textContent = item.target !== '' && Number.isFinite(targetNumber) ? formatMoney(targetNumber) : '—';
+          var target = document.createElement('strong'); target.className = 'plan-target';
+          var targetLabel = document.createElement('small'); targetLabel.textContent = 'Target price';
+          var targetValue = document.createElement('span');
+          var targetNumber = Number(item.target); targetValue.textContent = item.target !== '' && Number.isFinite(targetNumber) ? formatMoney(targetNumber) : 'Not set';
+          target.append(targetLabel, targetValue);
           var date = document.createElement('time'); date.dateTime = item.addedAt || ''; date.textContent = item.addedAt || '—';
+          var schwab = document.createElement('a'); schwab.className = 'buying-soon-link'; schwab.href = 'https://client.schwab.com/'; schwab.target = '_blank'; schwab.rel = 'noreferrer'; schwab.textContent = 'Schwab trade'; schwab.setAttribute('aria-label', 'Trade ' + String(item.ticker).toUpperCase() + ' at Schwab');
           var remove = document.createElement('button'); remove.type = 'button'; remove.className = 'buying-soon-remove'; remove.setAttribute('aria-label', 'Remove ' + (item.name || item.ticker) + ' from buying soon'); remove.textContent = '×';
           remove.addEventListener('click', function () {
             var next = readBuyingSoon().filter(function (entry) { return String(entry.ticker).toUpperCase() !== String(item.ticker).toUpperCase(); });
             buyPlanDataBlock.textContent = JSON.stringify(next); renderBuyingSoon();
           });
-          row.append(ticker, name, target, date, remove); buyingSoonList.appendChild(row);
+          row.append(ticker, name, target, date, schwab, remove); buyingSoonList.appendChild(row);
         });
         var selected = plan.map(function (item) { return String(item.ticker).toUpperCase(); });
         injectedWatchlist.querySelectorAll('.add-plan').forEach(function (button) {
@@ -1410,10 +1414,13 @@ function restore(){
     if(el){el.checked=!!S.tasks[id];fire(el,"change");}
   });
   // manual assets (replay through the page's own add flow; supports negatives)
+  // NOTE: the page's button is id="add-asset" (not "asset-add"). If none of
+  // these selectors match, restore silently does nothing and saved assets
+  // vanish on refresh -- always verify IDs against the live page.
   if(S.assets.length){
     var nameEl=document.getElementById("asset-name")||document.querySelector('[data-asset-name]');
     var valEl=document.getElementById("asset-value")||document.querySelector('[data-asset-value]');
-    var addBtn=document.getElementById("asset-add")||document.querySelector('[data-asset-add]');
+    var addBtn=document.getElementById("add-asset")||document.getElementById("asset-add")||document.querySelector('[data-asset-add]');
     var form=addBtn&&addBtn.closest?addBtn.closest("form"):null;
     S.assets.forEach(function(it){
       if(!nameEl||!valEl)return;
@@ -1458,27 +1465,29 @@ function hook(){
   document.querySelectorAll('input[type=checkbox][data-task]').forEach(function(el){
     el.addEventListener("change",function(){S.tasks[el.getAttribute("data-task")]=el.checked;save();});
   });
-  // manual assets: snapshot the list whenever it changes (keeps negatives)
+  // manual assets: snapshot the list whenever it changes (keeps negatives).
+  // Row contract (page renders): <li><span>name</span><strong>value</strong><button>Remove</button></li>
+  // NOTE: value uses U+2212 MINUS SIGN (not ASCII hyphen) and the row text
+  // ends with the "Remove" button label, so naive trailing-number regexes
+  // fail or flip the sign. Parse the strong element directly.
   var list=document.getElementById("manual-asset-list");
   if(list){
     var snap=function(){
       var out=[];
-      list.querySelectorAll("[data-asset-item],li,.asset-row").forEach(function(row){
-        var n=row.querySelector("[data-asset-name],.asset-name");
-        var v=row.querySelector("[data-asset-value],.asset-value");
-        var name=n?n.textContent.trim():(row.getAttribute("data-name")||"");
-        var val=v?v.textContent.trim():(row.getAttribute("data-value")||"");
-        val=parseFloat(String(val).replace(/[^0-9.\-]/g,""));
-        if(name&&!isNaN(val))out.push({name:name,value:val});
+      list.querySelectorAll("li").forEach(function(row){
+        if(row.classList&&row.classList.contains("empty-row"))return;
+        var name=row.getAttribute("data-name")||"";
+        var val=row.getAttribute("data-value")||"";
+        if(!name){
+          var n=row.querySelector("[data-asset-name],.asset-name,span");
+          var v=row.querySelector("[data-asset-value],.asset-value,strong");
+          name=n?n.textContent.trim():"";
+          val=v?v.textContent.trim():"";
+        }
+        if(!name)return;
+        var num=parseFloat(String(val).replace(/−/g,"-").replace(/[^0-9.\-]/g,""));
+        if(!isNaN(num))out.push({name:name,value:num});
       });
-      // fallback: parse rows as "name ... value"
-      if(!out.length){
-        list.querySelectorAll("li").forEach(function(li){
-          var t=li.textContent;
-          var m=t.match(/(.+?)\s*\$?\s*(-?[\d,]+(?:\.\d{2})?)\s*$/);
-          if(m)out.push({name:m[1].trim(),value:parseFloat(m[2].replace(/,/g,""))});
-        });
-      }
       S.assets=out;save();
     };
     new MutationObserver(snap).observe(list,{childList:true,subtree:true});
