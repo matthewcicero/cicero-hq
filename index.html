@@ -1137,7 +1137,7 @@
     </div>
   </div>
   <div id="vault" hidden></div>
-  <script src="app.js?v=75b626dea1a0"></script>
+  <script src="app.js?v=87e5a5345861"></script>
 <script>
 (function () {
   "use strict";
@@ -1255,8 +1255,8 @@
   }
   // Cache-busting: the vault is re-encrypted on every deploy (new salt), so a
   // cached vault.json would fail PIN unlock with a confusing "Wrong PIN".
-  // 70d12a8f6ba5 is replaced at build time with a hash of the vault data.
-  fetch("vault.json?v=70d12a8f6ba5").then(function (r) {
+  // 86f0be210132 is replaced at build time with a hash of the vault data.
+  fetch("vault.json?v=86f0be210132").then(function (r) {
     if (!r.ok) throw new Error("vault.json missing");
     return r.json();
   }).then(start).catch(function () {
