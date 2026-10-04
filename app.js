@@ -1374,10 +1374,12 @@ function hook(){
 }
 
 
-  // talent pipeline: persist the canonical JSON block; restore into the
-  // page's own records (shim is folded into initDashboard, same scope).
-  // Bulletproof: wrap commitTalent so EVERY add/edit/delete forces a save,
-  // in addition to the MutationObserver (belt and suspenders).
+  // talent pipeline: the page's dashboard code lives in its own IIFE, so the
+  // shim CANNOT touch its closure variables (talentRecords, commitTalent) --
+  // those references throw inside this IIFE and die silently in try/catch.
+  // Scope-safe channels only: the #talent-data block and the page-exposed
+  // window.__talentImport (swaps records + re-renders). Saves ride on the
+  // MutationObserver (every commitTalent rewrites the block) + beforeunload.
   function persistTalentNow(){
     try {
       var blk = document.getElementById("talent-data");
@@ -1391,20 +1393,17 @@ function hook(){
     }).observe(talentBlock, {childList:true, characterData:true, subtree:true});
     if (S.talent && S.talent.length) {
       try {
-        talentRecords.length = 0;
-        S.talent.forEach(function(r){ talentRecords.push(r); });
-        commitTalent();
-      } catch(e) {
-        try { talentBlock.textContent = JSON.stringify(S.talent); } catch(e2){}
-      }
+        // one-time cleanup: example seed records are flagged example:true
+        // ("delete anytime") -- drop them so they can never resurface
+        var clean = S.talent.filter(function(r){ return !r || r.example !== true; });
+        if (clean.length !== S.talent.length) { S.talent = clean; save(); }
+        if (window.__talentImport) window.__talentImport(JSON.parse(JSON.stringify(S.talent)));
+        // keep the canonical block in sync so beforeunload can never persist
+        // stale seed JSON over the restored state
+        talentBlock.textContent = JSON.stringify(S.talent);
+      } catch(e){}
     }
   }
-  try {
-    if (typeof commitTalent === "function") {
-      var _origCommitTalent = commitTalent;
-      commitTalent = function(){ _origCommitTalent(); persistTalentNow(); };
-    }
-  } catch(e){}
   try {
     window.addEventListener("beforeunload", persistTalentNow);
   } catch(e){}
@@ -1412,6 +1411,5 @@ function hook(){
 try{restore();}catch(e){}
 try{hook();}catch(e){}
 })();
-
 
 }
