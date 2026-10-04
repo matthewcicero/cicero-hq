@@ -46,20 +46,54 @@ function initDashboard() {
         var panel = document.getElementById('manual-assets-panel');
         var baseAssets = Number(panel.dataset.baseAssets);
         var baseLiabilities = Number(panel.dataset.baseLiabilities);
-        var added = manualAssets.reduce(function (sum, asset) { return sum + asset.value; }, 0);
+        var manualAssetValue = manualAssets.reduce(function (sum, asset) { return sum + (asset.value > 0 ? asset.value : 0); }, 0);
+        var manualDebtValue = manualAssets.reduce(function (sum, asset) { return sum + (asset.value < 0 ? Math.abs(asset.value) : 0); }, 0);
         var apple = document.getElementById('apple-balance');
         var appleValue = Math.max(Number(apple.value) || Number(apple.min), Number(apple.min));
-        var assets = baseAssets + added;
-        var liabilities = baseLiabilities + appleValue;
+        var assets = baseAssets + manualAssetValue;
+        var liabilities = baseLiabilities + appleValue + manualDebtValue;
         var net = assets - liabilities;
+        var netLabel = (net < 0 ? '−' : '+') + formatMoney(Math.abs(net));
+        var manualDebtNames = manualAssets.filter(function (asset) { return asset.value < 0; }).map(function (asset) { return asset.name; });
+        var manualAssetNames = manualAssets.filter(function (asset) { return asset.value > 0; }).map(function (asset) { return asset.name; });
         document.getElementById('aum-total').textContent = formatMoney(assets);
         document.getElementById('command-assets').textContent = formatMoney(assets);
         document.getElementById('command-liabilities').textContent = formatMoney(liabilities);
+        document.getElementById('posture-assets').textContent = formatMoney(assets);
         document.getElementById('posture-liabilities').textContent = formatMoney(liabilities);
-        document.getElementById('command-net-worth').textContent = (net < 0 ? '−' : '+') + formatMoney(Math.abs(net));
+        document.getElementById('command-net-worth').textContent = netLabel;
         document.getElementById('command-net-worth').classList.toggle('negative', net < 0);
         document.getElementById('command-net-worth').classList.toggle('positive', net >= 0);
         document.getElementById('apple-balance-display').textContent = appleValue ? formatMoney(appleValue) + ' owed' : 'Not entered';
+        document.getElementById('flow-total-debt').textContent = formatMoney(liabilities);
+        document.getElementById('flow-linked-assets-label').textContent = formatMoney(baseAssets);
+        document.getElementById('flow-manual-assets-label').textContent = formatMoney(manualAssetValue);
+        document.getElementById('flow-assets-label').textContent = formatMoney(assets);
+        document.getElementById('flow-apple-label').textContent = formatMoney(appleValue);
+        document.getElementById('flow-manual-debt-label').textContent = formatMoney(manualDebtValue);
+        document.getElementById('flow-debt-label').textContent = formatMoney(liabilities);
+        document.getElementById('flow-networth-label').textContent = netLabel;
+        document.getElementById('flow-apple-summary').textContent = formatMoney(appleValue);
+        document.getElementById('flow-manual-debt-summary').textContent = formatMoney(manualDebtValue);
+        document.getElementById('flow-manual-assets-summary').textContent = formatMoney(manualAssetValue);
+        document.getElementById('flow-manual-debt-items').textContent = manualDebtNames.length ? manualDebtNames.join(' · ') : 'None entered';
+        document.getElementById('flow-manual-asset-items').textContent = manualAssetNames.length ? manualAssetNames.join(' · ') : 'None entered';
+        var flowNodeValues = {
+          'tracked-assets': formatMoney(baseAssets), 'manual-assets': formatMoney(manualAssetValue),
+          'assets-total': formatMoney(assets), 'linked-debt': formatMoney(baseLiabilities),
+          'apple-debt': appleValue ? formatMoney(appleValue) : 'Not entered',
+          'manual-debt': formatMoney(manualDebtValue), 'total-debt': formatMoney(liabilities), 'networth': netLabel
+        };
+        Object.keys(flowNodeValues).forEach(function (key) {
+          var node = document.querySelector('#command [data-node="' + key + '"]');
+          if (node) node.dataset.total = flowNodeValues[key];
+        });
+        var exposure = document.getElementById('posture-exposure');
+        var totalPosition = Math.max(assets + liabilities, 1);
+        exposure.querySelector('.asset').style.flex = String(assets / totalPosition);
+        exposure.querySelector('.debt').style.flex = String(liabilities / totalPosition);
+        exposure.setAttribute('aria-label', (assets / totalPosition * 100).toFixed(1) + ' percent assets and ' + (liabilities / totalPosition * 100).toFixed(1) + ' percent liabilities');
+        if (selectedNode) renderFlowSelection(selectedNode);
       }
       var apple = document.getElementById('apple-balance');
       if (apple) apple.addEventListener('input', updateBalanceSheet);
@@ -184,8 +218,8 @@ function initDashboard() {
           readout.querySelector('b').textContent = selected.dataset.label;
           readout.querySelector('span').textContent = selected.dataset.total + ' · connected flows isolated';
         } else {
-          readout.querySelector('b').textContent = 'All flows';
-          readout.querySelector('span').textContent = 'Click a node to isolate its flows.';
+          readout.querySelector('b').textContent = 'All activity + positions';
+          readout.querySelector('span').textContent = 'Click a node to isolate its connected movement or balance-sheet inputs.';
         }
       }
       if (flow) {
