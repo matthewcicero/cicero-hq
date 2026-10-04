@@ -45,6 +45,84 @@ function initDashboard() {
       function formatMoney(value) { var sign = value < 0 ? '−' : ''; return sign + '$' + Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
       var hqData = JSON.parse(document.getElementById('hq-data').textContent || '{}');
       var inventoryAccounts = Array.isArray(hqData.accounts) ? hqData.accounts.slice() : [];
+      var capitalRollupFilter = 'all';
+      var capitalRollupLabels = {
+        all: 'Total capital', cash: 'Cash & Bank', brokerage: 'Brokerage', crypto: 'Crypto', retirement: 'Retirement', manual: 'Manual'
+      };
+      function capitalRow(institution, name, category, type, value, balanceLabel) {
+        return { institution: institution, name: name, category: category, type: type, value: value, balanceLabel: balanceLabel || '' };
+      }
+      function getCapitalRollupRows() {
+        var rows = [];
+        inventoryAccounts.forEach(function (account) {
+          if (account.personalNetWorth === false) return;
+          var institution = String(account.institution || 'Institution');
+          var type = String(account.type || 'account').toLowerCase();
+          var category = '';
+          if (institution.toLowerCase() === 'td bank' && (type === 'checking' || type === 'savings' || type === 'depository')) category = 'cash';
+          if (institution.toLowerCase() === 'schwab' && type === 'brokerage') category = 'brokerage';
+          if (institution.toLowerCase() === 'coinbase' && type === 'crypto') category = 'crypto';
+          if (!category) return;
+          var hasBalance = typeof account.balance === 'number' && Number.isFinite(account.balance);
+          rows.push(capitalRow(institution, account.name || 'Account', category, category === 'cash' ? 'Cash & Bank' : capitalRollupLabels[category], hasBalance ? account.balance : null, hasBalance ? '' : 'Manual / unknown'));
+        });
+        var retirementBalance = retirementInputs && retirementInputs.balance ? Number(retirementInputs.balance.value) : NaN;
+        var retirementName = retirementInputs && retirementInputs.plan ? retirementInputs.plan.value.trim() : '';
+        rows.push(capitalRow('ADP', retirementName || 'Retirement plan', 'retirement', 'Retirement', Number.isFinite(retirementBalance) ? retirementBalance : null, Number.isFinite(retirementBalance) ? '' : 'Manual / unknown'));
+        manualAssets.forEach(function (asset) {
+          rows.push(capitalRow('Manual', asset.name, 'manual', 'Manual', asset.value, ''));
+        });
+        return rows;
+      }
+      function buildCapitalRollupRow(row, company) {
+        var record = document.createElement('article');
+        record.className = 'capital-rollup-row' + (company ? ' company-row' : '');
+        record.setAttribute('role', 'listitem');
+        var institution = document.createElement('span'); institution.className = 'capital-rollup-institution'; institution.textContent = row.institution;
+        var name = document.createElement('strong'); name.className = 'capital-rollup-name'; name.textContent = row.name;
+        var type = document.createElement('span'); type.className = 'capital-rollup-type'; type.textContent = company ? 'Company — excluded from personal total' : row.type;
+        var balance = document.createElement('strong'); balance.className = 'capital-rollup-balance';
+        if (typeof row.value === 'number' && Number.isFinite(row.value)) {
+          balance.textContent = formatMoney(row.value);
+          if (row.value < 0) balance.classList.add('negative');
+          if (row.value > 0) balance.classList.add('positive');
+        } else {
+          balance.textContent = row.balanceLabel || 'Manual / unknown';
+          balance.classList.add('unknown');
+        }
+        record.append(institution, name, type, balance);
+        return record;
+      }
+      function renderCapitalRollup() {
+        var list = document.getElementById('capital-rollup-rows');
+        var companyList = document.getElementById('capital-rollup-company');
+        if (!list || !companyList) return;
+        var rows = getCapitalRollupRows();
+        var visibleRows = rows.filter(function (row) { return capitalRollupFilter === 'all' || row.category === capitalRollupFilter; });
+        // Company / Mercury rows are deliberately excluded from personal totals and every filter sum.
+        var total = visibleRows.reduce(function (sum, row) { return sum + (typeof row.value === 'number' && Number.isFinite(row.value) ? row.value : 0); }, 0);
+        document.getElementById('capital-rollup-label').textContent = capitalRollupLabels[capitalRollupFilter] || 'Total capital';
+        document.getElementById('capital-rollup-total').textContent = formatMoney(total);
+        list.replaceChildren();
+        if (!visibleRows.length) {
+          var empty = document.createElement('p'); empty.className = 'capital-rollup-empty'; empty.textContent = capitalRollupFilter === 'manual' ? 'No manual capital entered.' : 'No accounts in this category.'; list.appendChild(empty);
+        } else visibleRows.forEach(function (row) { list.appendChild(buildCapitalRollupRow(row, false)); });
+        companyList.replaceChildren();
+        inventoryAccounts.filter(function (account) { return account.personalNetWorth === false; }).forEach(function (account) {
+          var hasBalance = typeof account.balance === 'number' && Number.isFinite(account.balance);
+          companyList.appendChild(buildCapitalRollupRow(capitalRow(account.institution || 'Institution', account.name || 'Company account', 'company', 'Company', hasBalance ? account.balance : null, hasBalance ? '' : 'Manual / unknown'), true));
+        });
+      }
+      window.renderCapitalRollup = renderCapitalRollup;
+      document.getElementById('capital-rollup-filters').addEventListener('click', function (event) {
+        var button = event.target.closest('[data-capital-filter]');
+        if (!button) return;
+        capitalRollupFilter = button.dataset.capitalFilter;
+        document.querySelectorAll('[data-capital-filter]').forEach(function (item) {
+          var active = item === button; item.classList.toggle('active', active); item.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        renderCapitalRollup();
+      });
       function renderConnectedAccounts(accounts) {
         var list = document.getElementById('connected-account-list');
         if (!list) return;
@@ -117,6 +195,7 @@ function initDashboard() {
         document.getElementById('retirement-plan-display').textContent = retirementInputs.plan.value.trim() || 'Retirement plan';
         document.getElementById('retirement-balance-display').textContent = formatMoney(balance);
         document.getElementById('retirement-total-rate').textContent = retirementPercent(totalRate) + ' per paycheck';
+        renderCapitalRollup();
       }
       Object.keys(retirementInputs).forEach(function (key) {
         if (retirementInputs[key]) retirementInputs[key].addEventListener('input', renderRetirementCapital);
@@ -176,6 +255,7 @@ function initDashboard() {
         exposure.querySelector('.debt').style.flex = String(liabilities / totalPosition);
         exposure.setAttribute('aria-label', (assets / totalPosition * 100).toFixed(1) + ' percent assets and ' + (liabilities / totalPosition * 100).toFixed(1) + ' percent liabilities');
         if (selectedNode) renderFlowSelection(selectedNode);
+        renderCapitalRollup();
       }
       var apple = document.getElementById('apple-balance');
       if (apple) apple.addEventListener('input', updateBalanceSheet);
