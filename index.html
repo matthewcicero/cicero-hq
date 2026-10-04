@@ -412,6 +412,19 @@
     .sankey text { fill: var(--ink); font: 600 15px "IBM Plex Mono", monospace; }
     .sankey .sub { fill: var(--muted); font-size: 12px; font-weight: 500; }
     .sankey-caption { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 13px 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    .flow-panel-head { align-items: stretch; }
+    .flow-total { display: grid; justify-items: end; gap: 3px; min-width: 190px; }
+    .flow-total span { color: var(--faint); font: 600 9px "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .06em; }
+    .flow-total strong { color: var(--bad); font: 700 24px "Archivo Narrow", sans-serif; letter-spacing: .025em; }
+    .sankey .position-connector { fill: none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 7 7; }
+    .sankey .position-label { fill: var(--faint); font-size: 10px; letter-spacing: .06em; }
+    .sankey .position-value { font-size: 14px; }
+    .flow-inventory { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+    .flow-inventory article { min-width: 0; padding: 15px 18px; border-right: 1px solid var(--line); }
+    .flow-inventory article:last-child { border-right: 0; }
+    .flow-inventory span { display: block; color: var(--faint); font: 600 9px "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .05em; }
+    .flow-inventory strong { display: block; margin-top: 7px; font: 700 21px "Archivo Narrow", sans-serif; }
+    .flow-inventory small { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
     .planner-grid { display: grid; grid-template-columns: minmax(320px,.72fr) minmax(0,1.28fr); gap: 14px; }
     .planner-controls { padding: 24px; }
     .planner-controls h3 { margin: 0 0 20px; font-size: 22px; }
@@ -449,6 +462,12 @@
       .nav button { font-size: 12px; }
       .sankey-wrap { padding: 10px; }
       .sankey { min-height: 630px; }
+      .flow-panel-head { align-items: flex-start; }
+      .flow-total { min-width: 0; justify-items: end; }
+      .flow-total strong { font-size: 20px; }
+      .flow-inventory { grid-template-columns: 1fr 1fr; }
+      .flow-inventory article:nth-child(2) { border-right: 0; }
+      .flow-inventory article:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
       .planner-grid, .split-row, .watchlist-grid { grid-template-columns: 1fr; }
       .history-list li, .agenda-list li, .prediction-list li { grid-template-columns: 1fr; gap: 5px; }
       .allocation-output { grid-template-columns: 1fr; }
@@ -913,7 +932,7 @@
     </div>
   </div>
   <div id="vault" hidden></div>
-  <script src="app.js?v=17c704a0c90d"></script>
+  <script src="app.js?v=5b4aca227277"></script>
 <script>
 (function () {
   "use strict";
@@ -1031,8 +1050,8 @@
   }
   // Cache-busting: the vault is re-encrypted on every deploy (new salt), so a
   // cached vault.json would fail PIN unlock with a confusing "Wrong PIN".
-  // dad7bb69763b is replaced at build time with a hash of the vault data.
-  fetch("vault.json?v=dad7bb69763b").then(function (r) {
+  // 03e3b857d23a is replaced at build time with a hash of the vault data.
+  fetch("vault.json?v=03e3b857d23a").then(function (r) {
     if (!r.ok) throw new Error("vault.json missing");
     return r.json();
   }).then(start).catch(function () {
