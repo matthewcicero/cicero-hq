@@ -841,6 +841,19 @@
     var gate = document.getElementById("gate");
     if (gate) gate.remove();
     initDashboard();
+    // Dismiss the in-vault loading overlay once the dashboard is up. This
+    // lives in the gate (not initDashboard) so it fires even if a page
+    // script throws midway.
+    setTimeout(function () {
+      try {
+        var l = document.getElementById("load-screen");
+        if (l) {
+          l.style.transition = "opacity .5s ease";
+          l.style.opacity = "0";
+          setTimeout(function () { l.remove(); }, 550);
+        }
+      } catch (e) {}
+    }, 800);
   }
   function showError() {
     var err = document.getElementById("gate-err");
@@ -897,8 +910,8 @@
   }
   // Cache-busting: the vault is re-encrypted on every deploy (new salt), so a
   // cached vault.json would fail PIN unlock with a confusing "Wrong PIN".
-  // f93ce153c836 is replaced at build time with a hash of the vault data.
-  fetch("vault.json?v=f93ce153c836").then(function (r) {
+  // cf0b131c582e is replaced at build time with a hash of the vault data.
+  fetch("vault.json?v=cf0b131c582e").then(function (r) {
     if (!r.ok) throw new Error("vault.json missing");
     return r.json();
   }).then(start).catch(function () {
