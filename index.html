@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="light dark" />
   <meta name="theme-color" content="#0a0c0f" />
-  <title>Cicero HQ</title>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@600;700&amp;family=Cormorant+Garamond:wght@500;600&amp;family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23080a0c'/%3E%3Cpath d='M18 14h18v8H26v20h10v8H18V14Zm28 0v8H36v6h10v22H28v-8h10V36H28V14h18Z' fill='%23e23b34'/%3E%3C/svg%3E">
   <style>
     :root {
       color-scheme: light;
@@ -570,6 +571,95 @@
     }
     @media (prefers-reduced-motion: reduce) { .selectable, .sankey .node, .sankey .band { transition: none; } }
   </style>
+  <style>
+    /* Identity, data controls and ninth operating desk */
+    .brand-lockup { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; }
+    .brand-monogram { width: 54px; height: 54px; flex: 0 0 auto; color: var(--accent); }
+    .brand-monogram svg { display: block; width: 100%; height: 100%; }
+    .headshot { width: 64px; height: 64px; flex: 0 0 auto; object-fit: cover; border-radius: 50%; filter: grayscale(1) contrast(1.08); border: 1px solid var(--line); }
+    .wordmark { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: clamp(58px, 7.2vw, 112px); font-weight: 600; line-height: .78; letter-spacing: -.055em; text-transform: none; }
+    .wordmark small { display: block; margin-top: 13px; color: var(--muted); font: 600 10px "IBM Plex Mono", monospace; letter-spacing: .18em; text-transform: uppercase; }
+    .money-positive { color: var(--good) !important; }
+    .recurring-list .cost { color: var(--bad); }
+    .history-list .inflow, .history-list strong { color: var(--good); }
+    .category-button { width: 100%; border: 0; background: transparent; color: inherit; cursor: pointer; text-align: inherit; font: inherit; }
+    .bar-row { cursor: pointer; padding: 9px 8px; }
+    .bar-row:hover, .bar-row.active { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
+    .transaction-drawer { margin-top: 14px; border: 1px solid var(--line); background: var(--surface); }
+    .transaction-list { list-style: none; margin: 0; padding: 0; }
+    .transaction-list li { display: grid; grid-template-columns: 48px minmax(0,1fr) auto auto; gap: 14px; align-items: center; padding: 13px 16px; border-top: 1px solid var(--line); }
+    .merchant-avatar { width: 38px; height: 38px; display: grid; place-items: center; background: var(--surface-3); color: var(--ink); font: 700 11px "IBM Plex Mono", monospace; }
+    .transaction-list time { color: var(--muted); font: 600 11px "IBM Plex Mono", monospace; }
+    .transaction-list strong { color: var(--bad); font-size: 13px; }
+    .drawer-empty { margin: 0; padding: 18px; color: var(--muted); }
+    .holdings-controls { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+    .holdings-controls .filter { flex-wrap: wrap; }
+    .aum-taxonomy .name, .aum-taxonomy .balance { color: var(--good); }
+    .income-plan { margin-top: 18px; }
+    .income-plan:first-child { margin-top: 0; }
+    .plan-eyebrow { color: var(--good); font: 600 10px "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
+    .calendar-layout { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(300px,.75fr); gap: 14px; }
+    .month-calendar { padding: 18px; }
+    .calendar-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+    .calendar-head h3 { margin: 0; font: 600 25px "Cormorant Garamond", Georgia, serif; text-transform: none; }
+    .calendar-week, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); }
+    .calendar-week span { padding: 8px 4px; color: var(--faint); text-align: center; font: 600 9px "IBM Plex Mono", monospace; text-transform: uppercase; }
+    .calendar-day { position: relative; min-height: 72px; border: 1px solid var(--line); border-right: 0; border-bottom: 0; background: transparent; color: var(--ink); cursor: pointer; text-align: left; padding: 9px; font: 600 12px "IBM Plex Mono", monospace; }
+    .calendar-day:nth-child(7n) { border-right: 1px solid var(--line); }
+    .calendar-day:nth-last-child(-n+7) { border-bottom: 1px solid var(--line); }
+    .calendar-day.blank { cursor: default; color: transparent; }
+    .calendar-day.has-items::after { content: ""; position: absolute; left: 9px; bottom: 9px; width: 6px; height: 6px; background: var(--accent); }
+    .calendar-day.active { background: var(--surface-2); box-shadow: inset 0 -3px 0 var(--accent); }
+    .calendar-detail { padding: 20px; }
+    .calendar-detail h3 { margin: 0 0 14px; font-size: 18px; }
+    .calendar-detail ul { margin: 0; padding-left: 18px; color: var(--muted); line-height: 1.65; }
+    .task-entry { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+    .task-list li { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; }
+    .task-list .delete-task { min-height: 40px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; padding: 7px 12px; }
+    .task-done label span { color: var(--faint); text-decoration: line-through; }
+    .wire-link { display: block; color: inherit; text-decoration: none; }
+    .wire-link:hover .wire-item, .wire-link:focus-visible .wire-item { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
+    .wire-item cite { display: flex; align-items: center; gap: 8px; }
+    .wire-item cite::after { content: "↗"; color: var(--accent); font-size: 14px; }
+    .watch-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .watch-links a, .bucket-holdings a { color: var(--accent); font-size: 12px; }
+    .bucket-button { width: 100%; min-height: 44px; border: 0; background: transparent; color: var(--warn); cursor: pointer; text-align: right; font: 600 11px "IBM Plex Mono", monospace; }
+    .bucket-holdings { display: none; grid-column: 1 / -1; padding: 14px 0 0; border-top: 1px solid var(--line); }
+    .bucket.open .bucket-holdings { display: block; }
+    .bucket-holdings ul { list-style: none; margin: 0; padding: 0; }
+    .bucket-holdings li { display: grid; grid-template-columns: minmax(180px,1fr) auto auto auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .add-plan { min-height: 40px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; padding: 7px 10px; }
+    .add-plan.added { border-color: var(--good); color: var(--good); }
+    .health-today { display: grid; grid-template-columns: repeat(3,1fr); border: 1px solid var(--line); background: var(--surface); }
+    .health-metric { padding: 24px; border-right: 1px solid var(--line); }
+    .health-metric:last-child { border-right: 0; }
+    .health-metric span { display: block; color: var(--muted); font-size: 13px; }
+    .health-metric strong { display: block; margin-top: 12px; font-size: 27px; }
+    .integration-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+    .integration-card { padding: 20px; border: 1px solid var(--line); background: var(--surface); }
+    .integration-card h3 { margin: 0 0 8px; font-size: 17px; }
+    .integration-card p { margin: 0; color: var(--muted); line-height: 1.5; }
+    .integration-state { display: inline-block; margin-top: 20px; color: var(--accent); font: 600 10px "IBM Plex Mono", monospace; text-transform: uppercase; }
+    .gym-blocks { display: grid; grid-template-columns: repeat(3,1fr); border: 1px solid var(--line); background: var(--surface); }
+    .gym-block { padding: 20px; border-right: 1px solid var(--line); }
+    .gym-block:last-child { border-right: 0; }
+    .gym-block time { color: var(--good); font: 600 11px "IBM Plex Mono", monospace; }
+    .gym-block h3 { margin: 16px 0 6px; font-size: 18px; }
+    .gym-block p { margin: 0; color: var(--muted); }
+    @media (max-width:1100px) { .calendar-layout { grid-template-columns: 1fr; } .integration-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width:760px) {
+      .brand-lockup { align-items: center; gap: 10px; }
+      .brand-monogram { width: 42px; height: 42px; }
+      .headshot { width: 52px; height: 52px; }
+      .wordmark { font-size: 50px; }
+      .transaction-list li { grid-template-columns: 40px minmax(0,1fr) auto; }
+      .transaction-list time { grid-column: 2; }
+      .calendar-day { min-height: 54px; padding: 7px; }
+      .task-entry, .bucket-holdings li, .health-today, .integration-grid, .gym-blocks { grid-template-columns: 1fr; }
+      .health-metric, .gym-block { border-right: 0; border-bottom: 1px solid var(--line); }
+      .health-metric:last-child, .gym-block:last-child { border-bottom: 0; }
+    }
+  </style>
     <style>
     #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;
       background:#0e1116;padding:24px;font-family:-apple-system,BlinkMacSystemFont,
@@ -613,13 +703,27 @@
     .wl-owned{color:#9aa4b2;font-size:12.5px;margin-top:20px;line-height:1.55;
       border-top:1px solid #2a3139;padding-top:14px}
 </style>
+  
+    <title>Cicero HQ — Private Office of Matt Cicero</title>
+    <meta name="description" content="Cicero HQ is the private wealth office of Matt Cicero — capital allocation, investments, and the road to accredited investor. Authorized access only." />
+    <meta property="og:title" content="Cicero HQ — Private Office of Matt Cicero" />
+    <meta property="og:description" content="The private wealth office of Matt Cicero. Authorized access only." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://cicerohq.com/" />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"WebSite","name":"Cicero HQ",
+     "url":"https://cicerohq.com/",
+     "description":"The private wealth office of Matt Cicero.",
+     "creator":{"@type":"Person","name":"Matt Cicero"}}
+    </script>
   </head>
 <body>
   <div id="gate">
     <div class="gate-card">
-      <div class="gate-lock">🔒</div>
-      <div class="gate-title">Dashboard</div>
-      <div class="gate-sub">Enter your PIN to unlock</div>
+      <div class="gate-lock">⬢</div>
+      <div class="gate-title">CICERO HQ</div>
+      <div class="gate-sub">Private office of Matt Cicero — authorized access only</div>
       <input id="pin" type="password" inputmode="numeric" autocomplete="off"
              autocapitalize="off" spellcheck="false" maxlength="32" />
       <div id="gate-err" class="gate-err" hidden>Wrong PIN — try again.</div>
@@ -656,7 +760,19 @@
   function tryDecrypt(key) {
     return crypto.subtle.decrypt(
       { name: "AES-GCM", iv: b64ToBytes(VAULT.nonce) }, key, b64ToBytes(VAULT.data))
-      .then(function (pt) { return td.decode(pt); });
+      .then(function (pt) {
+        if (VAULT.v === 2) {
+          // Vault payload is gzip-compressed before encryption; inflate it.
+          var ds = new DecompressionStream("gzip");
+          var writer = ds.writable.getWriter();
+          writer.write(pt);
+          writer.close();
+          return new Response(ds.readable).arrayBuffer().then(function (buf) {
+            return td.decode(buf);
+          });
+        }
+        return td.decode(pt);
+      });
   }
   function showDashboard(html) {
     var vault = document.getElementById("vault");
@@ -745,7 +861,7 @@ function initDashboard() {
       navButtons.forEach(function (button) {
         button.addEventListener('click', function () {
           activate(button.getAttribute('data-view'));
-          window.scrollTo({ top: document.querySelector('.nav-wrap').offsetTop, behavior: 'smooth' });
+          window.scrollTo({ top: document.querySelector('.nav-wrap').offsetTop, behavior: 'auto' });
         });
       });
       document.querySelectorAll('[data-jump]').forEach(function (button) {
@@ -765,15 +881,22 @@ function initDashboard() {
       });
       var filterButtons = document.querySelectorAll('.filter button');
       var rows = document.querySelectorAll('.holdings-panel tbody tr');
+      var cryptoSymbols = ['IBIT', 'ETHA', 'BSOL', 'ETH', 'LINK'];
       filterButtons.forEach(function (button) {
         button.addEventListener('click', function () {
           var filter = button.getAttribute('data-filter');
           filterButtons.forEach(function (item) { item.classList.toggle('active', item === button); });
-          rows.forEach(function (row) { row.style.display = filter === 'all' || row.getAttribute('data-result') === filter ? '' : 'none'; });
+          rows.forEach(function (row) {
+            var ticker = row.querySelector('.ticker');
+            var symbol = ticker ? ticker.textContent.trim() : '';
+            var isCrypto = cryptoSymbols.indexOf(symbol) !== -1;
+            var visible = filter === 'all' || (filter === 'crypto' && isCrypto) || (filter === 'stocks' && !isCrypto && symbol !== 'Cash') || row.getAttribute('data-result') === filter;
+            row.style.display = visible ? '' : 'none';
+          });
         });
       });
       function parseMoney(text) { return Number(String(text).replace(/[^0-9.]/g, '')) || 0; }
-      function formatMoney(value) { return '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+      function formatMoney(value) { var sign = value < 0 ? '−' : ''; return sign + '$' + Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
       function updateBalanceSheet() {
         var panel = document.getElementById('manual-assets-panel');
         var baseAssets = Number(panel.dataset.baseAssets);
@@ -801,7 +924,7 @@ function initDashboard() {
         if (!manualAssets.length) {
           var empty = document.createElement('li');
           empty.className = 'empty-row';
-          empty.textContent = 'No manual assets in this session yet.';
+          empty.textContent = 'No manual assets or debts entered yet.';
           list.appendChild(empty);
         }
         manualAssets.forEach(function (asset, index) {
@@ -811,6 +934,7 @@ function initDashboard() {
           var remove = document.createElement('button');
           name.textContent = asset.name;
           value.textContent = formatMoney(asset.value);
+          value.className = asset.value < 0 ? 'negative' : 'positive';
           remove.className = 'inline-remove';
           remove.type = 'button';
           remove.textContent = 'Remove';
@@ -823,34 +947,37 @@ function initDashboard() {
         var name = document.getElementById('asset-name');
         var value = document.getElementById('asset-value');
         var amount = Number(value.value);
-        if (!name.value.trim() || !(amount > Number(value.min))) return;
+        if (!name.value.trim() || !Number.isFinite(amount) || amount === 0 || amount < Number(value.min) || amount > Number(value.max)) return;
         manualAssets.push({ name: name.value.trim(), value: amount });
         name.value = '';
         value.value = '';
         renderAssets();
         updateBalanceSheet();
       });
-      var check = document.getElementById('plan-check');
-      var debt = document.getElementById('debt-percent');
-      var invest = document.getElementById('invest-percent');
-      function updatePlan(source) {
-        var total = Math.max(Number(check.value) || Number(check.min), Number(check.min));
-        var debtPct = Math.max(Number(debt.value) || Number(debt.min), Number(debt.min));
-        var investPct = Math.max(Number(invest.value) || Number(invest.min), Number(invest.min));
-        if (source === debt) { investPct = Math.max(Number(invest.min), Number(debt.max) - debtPct); invest.value = investPct; }
-        if (source === invest) { debtPct = Math.max(Number(debt.min), Number(invest.max) - investPct); debt.value = debtPct; }
-        var debtAmount = total * debtPct / Number(debt.max);
-        var investAmount = total * investPct / Number(invest.max);
-        document.getElementById('debt-amount').textContent = formatMoney(debtAmount);
-        document.getElementById('invest-amount').textContent = formatMoney(investAmount);
-        document.getElementById('flow-check-label').textContent = formatMoney(total);
-        document.getElementById('flow-debt-label').textContent = formatMoney(debtAmount);
-        document.getElementById('flow-invest-label').textContent = formatMoney(investAmount);
-        document.getElementById('split-status').textContent = debtPct + '% debt · ' + investPct + '% invest';
-        document.getElementById('debt-band').setAttribute('stroke-width', String(Math.max(debtPct, Number(debt.step))));
-        document.getElementById('invest-band').setAttribute('stroke-width', String(Math.max(investPct, Number(invest.step))));
-      }
-      [check, debt, invest].forEach(function (input) { if (input) input.addEventListener('input', function () { updatePlan(input); }); });
+      document.querySelectorAll('[data-allocation-plan]').forEach(function (plan) {
+        var totalInput = plan.querySelector('.plan-total');
+        var debtInput = plan.querySelector('.plan-debt');
+        var investInput = plan.querySelector('.plan-invest');
+        function updatePlan(source) {
+          var total = Math.max(Number(totalInput.value) || Number(totalInput.min), Number(totalInput.min));
+          var debtPct = Math.max(Number(debtInput.value) || Number(debtInput.min), Number(debtInput.min));
+          var investPct = Math.max(Number(investInput.value) || Number(investInput.min), Number(investInput.min));
+          if (source === debtInput) { investPct = Math.max(Number(investInput.min), Number(debtInput.max) - debtPct); investInput.value = investPct; }
+          if (source === investInput) { debtPct = Math.max(Number(debtInput.min), Number(investInput.max) - investPct); debtInput.value = debtPct; }
+          var debtAmount = total * debtPct / Number(debtInput.max);
+          var investAmount = total * investPct / Number(investInput.max);
+          plan.querySelector('.plan-debt-amount').textContent = formatMoney(debtAmount);
+          plan.querySelector('.plan-invest-amount').textContent = formatMoney(investAmount);
+          plan.querySelector('.plan-total-label').textContent = formatMoney(total);
+          plan.querySelector('.plan-debt-label').textContent = formatMoney(debtAmount);
+          plan.querySelector('.plan-invest-label').textContent = formatMoney(investAmount);
+          plan.querySelector('.plan-status').textContent = debtPct + '% debt · ' + investPct + '% invest';
+          plan.querySelector('.plan-debt-band').setAttribute('stroke-width', String(Math.max(debtPct, Number(debtInput.step))));
+          plan.querySelector('.plan-invest-band').setAttribute('stroke-width', String(Math.max(investPct, Number(investInput.step))));
+        }
+        [totalInput, debtInput, investInput].forEach(function (input) { input.addEventListener('input', function () { updatePlan(input); }); });
+        updatePlan();
+      });
       var flow = document.querySelector('#command .sankey');
       var selectedNode = '';
       function selectFlow(node) {
@@ -890,24 +1017,98 @@ function initDashboard() {
           var now = parseMoney(cells[1].textContent);
           var entry = parseMoney(cells[3].textContent);
           var change = now - entry;
-          var percent = entry ? change / entry * Number(debt.max) : Number(debt.min);
+          var percentInput = document.querySelector('.plan-debt');
+          var percentScale = Number(percentInput.max);
+          var zero = Number(percentInput.min);
+          var percent = entry ? change / entry * percentScale : zero;
           var maximum = Math.max(now, entry);
           document.getElementById('holding-title').textContent = symbol;
           document.getElementById('entry-value').textContent = formatMoney(entry);
           document.getElementById('now-value').textContent = formatMoney(now);
-          document.getElementById('entry-bar').style.width = (entry / maximum * Number(debt.max)) + '%';
-          document.getElementById('now-bar').style.width = (now / maximum * Number(debt.max)) + '%';
-          document.getElementById('now-bar').style.background = change >= Number(debt.min) ? 'var(--good)' : 'var(--bad)';
+          document.getElementById('entry-bar').style.width = (entry / maximum * percentScale) + '%';
+          document.getElementById('now-bar').style.width = (now / maximum * percentScale) + '%';
+          document.getElementById('now-bar').style.background = change >= zero ? 'var(--good)' : 'var(--bad)';
           var changeNode = document.getElementById('holding-change');
-          changeNode.textContent = (change >= Number(debt.min) ? '+' : '−') + formatMoney(Math.abs(change)) + ' · ' + (change >= Number(debt.min) ? '+' : '−') + Math.abs(percent).toFixed(2) + '%';
-          changeNode.className = 'holding-change ' + (change >= Number(debt.min) ? 'positive' : 'negative');
+          changeNode.textContent = (change >= zero ? '+' : '−') + formatMoney(Math.abs(change)) + ' · ' + (change >= zero ? '+' : '−') + Math.abs(percent).toFixed(2) + '%';
+          changeNode.className = 'holding-change ' + (change >= zero ? 'positive' : 'negative');
           dialog.showModal();
         });
       });
       dialog.querySelector('.dialog-close').addEventListener('click', function () { dialog.close(); });
       dialog.addEventListener('click', function (event) { if (event.target === dialog) dialog.close(); });
-      document.querySelectorAll('.task-list input').forEach(function (box) {
-        box.addEventListener('change', function () { box.closest('li').classList.toggle('task-done', box.checked); });
+      var spendingData = JSON.parse(document.getElementById('spending-data').textContent);
+      var transactionList = document.getElementById('transaction-list');
+      function merchantInitials(name) {
+        return name.split(/\s+/).filter(Boolean).slice(0, 2).map(function (part) { return part.charAt(0).toUpperCase(); }).join('');
+      }
+      function showTransactions(category) {
+        var items = spendingData[category] || [];
+        document.getElementById('transaction-title').textContent = category.replace(/_/g, ' ') + ' · transaction detail';
+        document.getElementById('transaction-count').textContent = items.length ? items.length + ' matched rows' : 'No itemized rows';
+        transactionList.replaceChildren();
+        if (!items.length) {
+          var empty = document.createElement('li'); empty.className = 'drawer-empty'; empty.textContent = 'No itemized merchant rows are embedded for this category in the current snapshot.'; transactionList.appendChild(empty); return;
+        }
+        items.forEach(function (item) {
+          var row = document.createElement('li');
+          var avatar = document.createElement('span'); avatar.className = 'merchant-avatar'; avatar.textContent = merchantInitials(item.merchant);
+          var merchant = document.createElement('span'); merchant.textContent = item.merchant;
+          var date = document.createElement('time'); date.textContent = item.date;
+          var amount = document.createElement('strong'); amount.textContent = item.amount;
+          row.append(avatar, merchant, date, amount); transactionList.appendChild(row);
+        });
+      }
+      document.querySelectorAll('[data-category]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          document.querySelectorAll('[data-category]').forEach(function (item) { item.classList.toggle('active', item === button); });
+          showTransactions(button.dataset.category);
+        });
+      });
+      showTransactions(document.querySelector('[data-category].active').dataset.category);
+
+      var agendaData = JSON.parse(document.getElementById('agenda-data').textContent);
+      document.querySelectorAll('.calendar-day[data-date]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          document.querySelectorAll('.calendar-day').forEach(function (day) { day.classList.toggle('active', day === button); });
+          var date = button.dataset.date;
+          var items = agendaData[date] || [];
+          document.getElementById('calendar-detail-title').textContent = date;
+          var detail = document.getElementById('calendar-detail-list'); detail.replaceChildren();
+          if (!items.length) { var empty = document.createElement('li'); empty.textContent = 'No synced agenda items for this day.'; detail.appendChild(empty); }
+          items.forEach(function (text) { var item = document.createElement('li'); item.textContent = text; detail.appendChild(item); });
+        });
+      });
+
+      var taskList = document.getElementById('task-list');
+      taskList.addEventListener('change', function (event) {
+        if (event.target.matches('input[type="checkbox"]')) event.target.closest('li').classList.toggle('task-done', event.target.checked);
+      });
+      taskList.addEventListener('click', function (event) {
+        var remove = event.target.closest('.delete-task'); if (remove) remove.closest('li').remove();
+      });
+      document.getElementById('task-entry-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        var input = document.getElementById('new-task');
+        var text = input.value.trim(); if (!text) return;
+        var item = document.createElement('li');
+        var label = document.createElement('label');
+        var box = document.createElement('input'); box.type = 'checkbox'; box.dataset.task = 'custom';
+        var copy = document.createElement('span'); copy.textContent = text;
+        var remove = document.createElement('button'); remove.className = 'delete-task'; remove.type = 'button'; remove.textContent = 'Delete';
+        label.append(box, copy); item.append(label, remove); taskList.appendChild(item); input.value = '';
+      });
+
+      document.querySelectorAll('.bucket-button').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var bucket = button.closest('.bucket');
+          var expanded = !bucket.classList.contains('open');
+          bucket.classList.toggle('open', expanded); button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        });
+      });
+      document.querySelectorAll('.add-plan').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var added = !button.classList.contains('added'); button.classList.toggle('added', added); button.textContent = added ? 'Added' : 'Add to plan';
+        });
       });
       var injectedWatchlist = document.getElementById('watchlist');
       var watchTemplate = document.getElementById('watchlist-upgrade-template');
@@ -923,6 +1124,12 @@ function initDashboard() {
       function wireWatchCard(card) {
         var remove = card.querySelector('.remove-card');
         if (remove) remove.addEventListener('click', function () { card.remove(); });
+        var trading = Array.from(card.children).find(function (node) { return node.tagName === 'A' && node.textContent === 'TradingView'; });
+        if (trading && !card.querySelector('.schwab-trade')) {
+          var links = document.createElement('div'); links.className = 'watch-links';
+          trading.parentNode.insertBefore(links, trading); links.appendChild(trading);
+          var schwab = document.createElement('a'); schwab.className = 'schwab-trade'; schwab.href = 'https://client.schwab.com/'; schwab.target = '_blank'; schwab.rel = 'noreferrer'; schwab.textContent = (document.getElementById('watchlist-grid').dataset.brokerLabel || 'Trade'); links.appendChild(schwab);
+        }
         card.addEventListener('dragstart', function () { card.classList.add('dragging'); });
         card.addEventListener('dragend', function () { card.classList.remove('dragging'); });
       }
