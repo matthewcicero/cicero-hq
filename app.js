@@ -203,14 +203,6 @@ function initDashboard() {
         });
       }
       renderConnectedAccounts(inventoryAccounts);
-      // 401(k) balance flows into net worth: recalc when retirement inputs change
-      ['retirement-plan','retirement-balance','retirement-pretax','retirement-roth','retirement-allocation'].forEach(function(id){
-        var el = document.getElementById(id);
-        if (el) {
-          el.addEventListener('input', function(){ try { updateBalanceSheet(); } catch(e){} });
-          el.addEventListener('change', function(){ try { updateBalanceSheet(); } catch(e){} });
-        }
-      });
       var retirementInputs = {
         plan: document.getElementById('retirement-plan'),
         balance: document.getElementById('retirement-balance'),
@@ -260,9 +252,7 @@ function initDashboard() {
         var manualDebtValue = manualAssets.reduce(function (sum, asset) { return sum + (asset.value < 0 ? Math.abs(asset.value) : 0); }, 0);
         var apple = document.getElementById('apple-balance');
         var appleValue = Math.max(Number(apple.value) || Number(apple.min), Number(apple.min));
-        var retirementBalanceEl = document.getElementById('retirement-balance');
-        var retirementValue = retirementBalanceEl ? (Number(retirementBalanceEl.value) || 0) : 0;
-        var assets = baseAssets + manualAssetValue + retirementValue;
+        var assets = baseAssets + manualAssetValue;
         var liabilities = baseLiabilities + appleValue + manualDebtValue;
         var net = assets - liabilities;
         var netLabel = (net < 0 ? '−' : '+') + formatMoney(Math.abs(net));
@@ -1071,37 +1061,30 @@ function initDashboard() {
           mapElement.innerHTML = '<div class="map-fallback">Interactive map unavailable. Use the eight property cards and their building links below.</div>';
           return;
         }
-        var map = L.map('office-map', { scrollWheelZoom: false }).setView([39.9505, -75.1685], 15);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles &copy; Esri', maxZoom: 19
-        }).addTo(map);
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-          maxZoom: 19
-        }).addTo(map);
-        var markers = officePlaces.map(function (p, i) {
-          var icon = L.divIcon({ className: '', html: '<div class="pin" data-pin="' + i + '">' + (i + 1) + '</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
-          var m = L.marker([p.lat, p.lng], { icon: icon }).addTo(map);
-          m.bindPopup('<strong>' + p.label + '</strong><br>' + p.size + ' &middot; ' + p.rent + '<br><a href="' + p.link + '" target="_blank" rel="noreferrer">Open in Maps</a>');
-          m.on('click', function () { selectOffice(i, true); highlightPin(i); });
-          return m;
+        var dark = document.documentElement.getAttribute('data-theme') !== 'ivory';
+        var map = L.map(mapElement, { scrollWheelZoom: false }).setView([39.9495, -75.1675], 15);
+        L.tileLayer(dark
+          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+          : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+          { attribution: 'Esri', maxZoom: 19 }).addTo(map);
+        var markers = officePlaces.map(function (place, index) {
+          var icon = L.divIcon({ className: 'office-pin', html: '<div class="pin">' + (index + 1) + '</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+          var marker = L.marker([place.lat, place.lng], { icon: icon }).addTo(map);
+          marker.on('click', function () { officeMapInstance.selectPlace(index); selectOffice(index, false); });
+          return marker;
         });
-        function highlightPin(idx) {
-          markers.forEach(function (m, j) {
-            var el = m.getElement();
-            if (el) { var pin = el.querySelector('.pin'); if (pin) pin.classList.toggle('pin--on', j === idx); }
-          });
-        }
         officeMapInstance = {
           selectPlace: function (index) {
-            if (index == null || !markers[index]) return;
-            map.panTo(markers[index].getLatLng());
-            markers[index].openPopup();
-            highlightPin(index);
+            markers.forEach(function (m, i) {
+              var el = m.getElement();
+              if (el) { var pin = el.querySelector('.pin'); if (pin) pin.classList.toggle('pin--on', i === index); }
+            });
+            var p = officePlaces[index];
+            if (p) map.panTo([p.lat, p.lng]);
           }
         };
         officeMapInstance.selectPlace(0);
         selectOffice(0, false);
-        setTimeout(function () { map.invalidateSize(); }, 120);
       }
       document.querySelectorAll('.office-card').forEach(function (card) {
         function choose() { var index = Number(card.getAttribute('data-office-index')); if (officeMapInstance) officeMapInstance.selectPlace(index); selectOffice(index, false); }
