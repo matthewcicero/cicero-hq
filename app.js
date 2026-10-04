@@ -43,6 +43,77 @@ function initDashboard() {
       });
       function parseMoney(text) { return Number(String(text).replace(/[^0-9.]/g, '')) || 0; }
       function formatMoney(value) { var sign = value < 0 ? '−' : ''; return sign + '$' + Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+      var hqData = JSON.parse(document.getElementById('hq-data').textContent || '{}');
+      var inventoryAccounts = Array.isArray(hqData.accounts) ? hqData.accounts.slice() : [];
+      function renderConnectedAccounts(accounts) {
+        var list = document.getElementById('connected-account-list');
+        if (!list) return;
+        list.replaceChildren();
+        (Array.isArray(accounts) ? accounts : []).forEach(function (account) {
+          var record = document.createElement('article');
+          record.className = 'connected-account' + (account.personalNetWorth === false ? ' company-money' : '');
+          record.setAttribute('role', 'listitem');
+          var head = document.createElement('div'); head.className = 'connected-account-head';
+          var institution = document.createElement('span'); institution.className = 'account-institution'; institution.textContent = account.institution || 'Institution';
+          var name = document.createElement('h3'); name.textContent = account.name || 'Account';
+          var meta = document.createElement('div'); meta.className = 'connected-account-meta';
+          var type = document.createElement('span'); type.className = 'connected-account-type'; type.textContent = (account.type || 'account') + ' · ' + (account.source || 'connected');
+          meta.appendChild(type);
+          if (account.personalNetWorth === false) {
+            var company = document.createElement('span'); company.className = 'company-money-badge'; company.textContent = 'Company money'; meta.appendChild(company);
+          }
+          head.append(institution, name, meta);
+          var balance = document.createElement('strong'); balance.className = 'connected-account-balance';
+          var hasBalance = typeof account.balance === 'number' && Number.isFinite(account.balance);
+          balance.textContent = hasBalance ? formatMoney(account.balance) : 'Manual / unknown';
+          if (hasBalance && account.balance > 0) balance.classList.add('positive');
+          if (hasBalance && account.balance < 0) balance.classList.add('negative');
+          if (!hasBalance) balance.classList.add('unknown');
+          record.append(head, balance);
+          if (account.note) { var note = document.createElement('p'); note.className = 'connected-account-note'; note.textContent = account.note; record.appendChild(note); }
+          list.appendChild(record);
+        });
+      }
+      renderConnectedAccounts(inventoryAccounts);
+      var retirementInputs = {
+        plan: document.getElementById('retirement-plan'),
+        balance: document.getElementById('retirement-balance'),
+        pretax: document.getElementById('retirement-pretax'),
+        roth: document.getElementById('retirement-roth'),
+        allocation: document.getElementById('retirement-allocation')
+      };
+      function retirementPercent(value) {
+        var number = Math.max(0, Number(value) || 0);
+        return number.toFixed(1).replace('.0', '') + '%';
+      }
+      function renderRetirementCapital() {
+        if (!retirementInputs.plan) return;
+        var plaidRetirement = inventoryAccounts.find(function (account) {
+          var descriptor = [account.institution, account.name, account.type].join(' ').toLowerCase();
+          return String(account.source || '').toLowerCase() === 'plaid' && /(401\s*\(?k\)?|retire|pension|\bira\b)/.test(descriptor);
+        });
+        var fields = [retirementInputs.plan, retirementInputs.balance, retirementInputs.pretax, retirementInputs.roth, retirementInputs.allocation];
+        if (plaidRetirement) {
+          retirementInputs.plan.value = plaidRetirement.name || plaidRetirement.institution || 'Retirement account';
+          retirementInputs.balance.value = typeof plaidRetirement.balance === 'number' ? plaidRetirement.balance.toFixed(2) : '';
+          retirementInputs.pretax.value = typeof plaidRetirement.preTaxPercent === 'number' ? plaidRetirement.preTaxPercent : '';
+          retirementInputs.roth.value = typeof plaidRetirement.rothPercent === 'number' ? plaidRetirement.rothPercent : '';
+          retirementInputs.allocation.value = plaidRetirement.allocation || 'Allocation not reported by Plaid';
+          fields.forEach(function (field) { field.disabled = true; });
+          document.getElementById('retirement-source').textContent = 'Plaid';
+          document.getElementById('retirement-meta').textContent = (plaidRetirement.institution || 'Connected institution') + (plaidRetirement.asOf ? ' · as of ' + plaidRetirement.asOf : ' · linked retirement account');
+          document.getElementById('retirement-mode-note').textContent = 'Plaid retirement data is active and takes precedence over the manual fallback values.';
+        }
+        var balance = Math.max(0, Number(retirementInputs.balance.value) || 0);
+        var totalRate = Math.max(0, Number(retirementInputs.pretax.value) || 0) + Math.max(0, Number(retirementInputs.roth.value) || 0);
+        document.getElementById('retirement-plan-display').textContent = retirementInputs.plan.value.trim() || 'Retirement plan';
+        document.getElementById('retirement-balance-display').textContent = formatMoney(balance);
+        document.getElementById('retirement-total-rate').textContent = retirementPercent(totalRate) + ' per paycheck';
+      }
+      Object.keys(retirementInputs).forEach(function (key) {
+        if (retirementInputs[key]) retirementInputs[key].addEventListener('input', renderRetirementCapital);
+      });
+      renderRetirementCapital();
       function updateBalanceSheet() {
         var panel = document.getElementById('manual-assets-panel');
         var baseAssets = Number(panel.dataset.baseAssets);
@@ -363,7 +434,7 @@ function initDashboard() {
         if (trading && !card.querySelector('.schwab-trade')) {
           var links = document.createElement('div'); links.className = 'watch-links';
           trading.parentNode.insertBefore(links, trading); links.appendChild(trading);
-          var schwab = document.createElement('a'); schwab.className = 'schwab-trade'; schwab.href = 'https://client.schwab.com/'; schwab.target = '_blank'; schwab.rel = 'noreferrer'; schwab.textContent = (document.getElementById('watchlist-grid').dataset.brokerLabel || 'Trade'); links.appendChild(schwab);
+          var schwab = document.createElement('a'); schwab.className = 'schwab-trade'; schwab.href = 'https://client.schwab.com/'; schwab.target = '_blank'; schwab.rel = 'noreferrer'; schwab.textContent = 'Trade'; links.appendChild(schwab);
         }
         card.addEventListener('dragstart', function () { card.classList.add('dragging'); });
         card.addEventListener('dragend', function () { card.classList.remove('dragging'); });
@@ -726,41 +797,41 @@ function initDashboard() {
       function initOfficeMap() {
         if (officeMapInstance || !document.getElementById('career').classList.contains('active')) return;
         var mapElement = document.getElementById('office-map');
-        function showFallback() {
-          officeMapInstance = null;
+        if (!window.L) {
           mapElement.innerHTML = '<div class="map-fallback">Interactive map unavailable. Use the eight property cards and their building links below.</div>';
+          return;
         }
-        if (!window.L) { showFallback(); return; }
-        try {
-          var map = L.map(mapElement, { scrollWheelZoom: false }).setView([39.9495, -75.1665], 14);
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-            maxZoom: 16
-          }).addTo(map);
-          var markers = officePlaces.map(function (place, index) {
-            var icon = L.divIcon({
-              className: 'office-pin-wrap',
-              html: '<div class="pin' + (index === 0 ? ' pin--on' : '') + '">' + (index + 1) + '</div>',
-              iconSize: [32, 32], iconAnchor: [16, 16]
-            });
-            var marker = L.marker([place.lat, place.lng], { icon: icon, title: place.label }).addTo(map);
-            marker.bindTooltip(place.label, { direction: 'top', offset: [0, -16] });
-            marker.on('click', function () { selectOffice(index, false); setOfficePin(index); });
-            return marker;
+        var map = L.map('office-map', { scrollWheelZoom: false }).setView([39.9505, -75.1685], 15);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Tiles &copy; Esri', maxZoom: 19
+        }).addTo(map);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+          maxZoom: 19
+        }).addTo(map);
+        var markers = officePlaces.map(function (p, i) {
+          var icon = L.divIcon({ className: '', html: '<div class="pin" data-pin="' + i + '">' + (i + 1) + '</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+          var m = L.marker([p.lat, p.lng], { icon: icon }).addTo(map);
+          m.bindPopup('<strong>' + p.label + '</strong><br>' + p.size + ' &middot; ' + p.rent + '<br><a href="' + p.link + '" target="_blank" rel="noreferrer">Open in Maps</a>');
+          m.on('click', function () { selectOffice(i, true); highlightPin(i); });
+          return m;
+        });
+        function highlightPin(idx) {
+          markers.forEach(function (m, j) {
+            var el = m.getElement();
+            if (el) { var pin = el.querySelector('.pin'); if (pin) pin.classList.toggle('pin--on', j === idx); }
           });
-          map.fitBounds(L.latLngBounds(officePlaces.map(function (pl) { return [pl.lat, pl.lng]; })).pad(0.3));
-          officeMapInstance = {
-            selectPlace: function (index) {
-              setOfficePin(index);
-              if (index !== null && markers[index]) { map.panTo(markers[index].getLatLng()); }
-            }
-          };
-          selectOffice(0, false);
-        } catch (e) { showFallback(); }
-      }
-      function setOfficePin(index) {
-        var pins = document.querySelectorAll('#office-map .pin');
-        for (var i = 0; i < pins.length; i++) { pins[i].classList.toggle('pin--on', i === index); }
+        }
+        officeMapInstance = {
+          selectPlace: function (index) {
+            if (index == null || !markers[index]) return;
+            map.panTo(markers[index].getLatLng());
+            markers[index].openPopup();
+            highlightPin(index);
+          }
+        };
+        officeMapInstance.selectPlace(0);
+        selectOffice(0, false);
+        setTimeout(function () { map.invalidateSize(); }, 120);
       }
       document.querySelectorAll('.office-card').forEach(function (card) {
         function choose() { var index = Number(card.getAttribute('data-office-index')); if (officeMapInstance) officeMapInstance.selectPlace(index); selectOffice(index, false); }
@@ -896,6 +967,7 @@ function initDashboard() {
     })();
   
 
+/* cicerohq.v1 persist shim (deploy-injected) */
 (function(){
 "use strict";
 var KEY="cicerohq.v1";
