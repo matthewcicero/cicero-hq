@@ -47,6 +47,8 @@ function initDashboard() {
       var inventoryAccounts = Array.isArray(hqData.accounts) ? hqData.accounts.slice() : [];
       var capitalRollupFilter = 'all';
       var commandAumFilter = 'all';
+      var capitalScope = 'personal';
+      var otherAccountEntries = [];
       var capitalRollupLabels = {
         all: 'Total capital', cash: 'Cash & Bank', brokerage: 'Brokerage', crypto: 'Crypto', retirement: 'Retirement', manual: 'Manual'
       };
@@ -56,23 +58,46 @@ function initDashboard() {
       function capitalRow(institution, name, category, type, value, balanceLabel) {
         return { institution: institution, name: name, category: category, type: type, value: value, balanceLabel: balanceLabel || '' };
       }
+      function inputMoneyValue(id) {
+        var input = document.getElementById(id);
+        if (!input || input.value.trim() === '') return null;
+        var value = Number(input.value);
+        return Number.isFinite(value) && value >= 0 ? value : null;
+      }
+      function accountCategory(account) {
+        var institution = String(account.institution || '').toLowerCase();
+        var type = String(account.type || 'account').toLowerCase();
+        if (type === 'checking' || type === 'savings' || type === 'depository' || type === 'business checking') return 'cash';
+        if (institution === 'schwab' && type === 'brokerage') return 'brokerage';
+        if (institution === 'coinbase' && type === 'crypto') return 'crypto';
+        if (/(401\s*\(?k\)?|retire|pension|\bira\b)/.test([institution, account.name, type].join(' '))) return 'retirement';
+        return '';
+      }
+      function getAdditionalRetirementRows() {
+        var rothCustodian = document.getElementById('roth-custodian');
+        var fixedNote = document.getElementById('fixed-income-note');
+        var rows = [
+          capitalRow(rothCustodian && rothCustodian.value.trim() ? rothCustodian.value.trim() : 'Manual', 'Roth IRA', 'retirement', 'Retirement', inputMoneyValue('roth-balance'), 'Not entered'),
+          capitalRow('Manual', 'Bonds / fixed income', 'retirement', fixedNote && fixedNote.value.trim() ? fixedNote.value.trim() : 'Fixed income', inputMoneyValue('fixed-income-balance'), 'Not entered')
+        ];
+        (Array.isArray(otherAccountEntries) ? otherAccountEntries : []).forEach(function (account) {
+          rows.push(capitalRow('Manual', account.name, 'retirement', 'Retirement', account.value, 'Not entered'));
+        });
+        return rows;
+      }
       function getCapitalRollupRows() {
         var rows = [];
         inventoryAccounts.forEach(function (account) {
           if (account.personalNetWorth === false) return;
-          var institution = String(account.institution || 'Institution');
-          var type = String(account.type || 'account').toLowerCase();
-          var category = '';
-          if (institution.toLowerCase() === 'td bank' && (type === 'checking' || type === 'savings' || type === 'depository')) category = 'cash';
-          if (institution.toLowerCase() === 'schwab' && type === 'brokerage') category = 'brokerage';
-          if (institution.toLowerCase() === 'coinbase' && type === 'crypto') category = 'crypto';
+          var category = accountCategory(account);
           if (!category) return;
           var hasBalance = typeof account.balance === 'number' && Number.isFinite(account.balance);
-          rows.push(capitalRow(institution, account.name || 'Account', category, category === 'cash' ? 'Cash & Bank' : capitalRollupLabels[category], hasBalance ? account.balance : null, hasBalance ? '' : 'Manual / unknown'));
+          rows.push(capitalRow(account.institution || 'Institution', account.name || 'Account', category, category === 'cash' ? 'Cash & Bank' : capitalRollupLabels[category], hasBalance ? account.balance : null, hasBalance ? '' : 'Manual / unknown'));
         });
-        var retirementBalance = retirementInputs && retirementInputs.balance ? Number(retirementInputs.balance.value) : NaN;
+        var retirementBalance = retirementInputs && retirementInputs.balance && retirementInputs.balance.value.trim() !== '' ? Number(retirementInputs.balance.value) : null;
         var retirementName = retirementInputs && retirementInputs.plan ? retirementInputs.plan.value.trim() : '';
-        rows.push(capitalRow('ADP', retirementName || 'Retirement plan', 'retirement', 'Retirement', Number.isFinite(retirementBalance) ? retirementBalance : null, Number.isFinite(retirementBalance) ? '' : 'Manual / unknown'));
+        rows.push(capitalRow('ADP', retirementName || 'Retirement plan', 'retirement', 'Retirement', typeof retirementBalance === 'number' && Number.isFinite(retirementBalance) ? retirementBalance : null, 'Not entered'));
+        rows = rows.concat(getAdditionalRetirementRows());
         manualAssets.filter(function (asset) { return asset.value > 0; }).forEach(function (asset) {
           rows.push(capitalRow('Manual', asset.name, 'manual', 'Manual', asset.value, ''));
         });
@@ -81,16 +106,18 @@ function initDashboard() {
       function getCompanyCapitalRows() {
         return inventoryAccounts.filter(function (account) { return account.personalNetWorth === false; }).map(function (account) {
           var hasBalance = typeof account.balance === 'number' && Number.isFinite(account.balance);
-          return capitalRow(account.institution || 'Institution', account.name || 'Company account', 'company', 'Company', hasBalance ? account.balance : null, hasBalance ? '' : 'Manual / unknown');
+          return capitalRow(account.institution || 'Institution', account.name || 'Company account', accountCategory(account) || 'manual', 'Company', hasBalance ? account.balance : null, hasBalance ? '' : 'Manual / unknown');
         });
       }
-      function buildCapitalRollupRow(row, company) {
+      function buildCapitalRollupRow(row, companyMode) {
+        var isCompany = Boolean(companyMode);
         var record = document.createElement('article');
-        record.className = 'capital-rollup-row' + (company ? ' company-row' : '');
+        record.className = 'capital-rollup-row' + (isCompany ? ' company-row' : '');
         record.setAttribute('role', 'listitem');
         var institution = document.createElement('span'); institution.className = 'capital-rollup-institution'; institution.textContent = row.institution;
         var name = document.createElement('strong'); name.className = 'capital-rollup-name'; name.textContent = row.name;
-        var type = document.createElement('span'); type.className = 'capital-rollup-type'; type.textContent = company ? 'Company — excluded from personal total' : row.type;
+        var type = document.createElement('span'); type.className = 'capital-rollup-type';
+        type.textContent = companyMode === 'combined' ? 'Company' : (isCompany ? 'Company — excluded from personal net worth' : row.type);
         var balance = document.createElement('strong'); balance.className = 'capital-rollup-balance';
         if (typeof row.value === 'number' && Number.isFinite(row.value)) {
           balance.textContent = formatMoney(row.value);
@@ -103,22 +130,46 @@ function initDashboard() {
         record.append(institution, name, type, balance);
         return record;
       }
+      function setCapitalSummary(personalTotal, companyTotal) {
+        var summary = document.getElementById('capital-rollup-summary');
+        summary.replaceChildren();
+        summary.classList.toggle('combined-summary', capitalScope === 'combined');
+        function addLine(label, value, totalLine) {
+          var labelNode = document.createElement('span'); labelNode.textContent = label;
+          var valueNode = document.createElement('strong'); valueNode.textContent = formatMoney(value);
+          if (totalLine || capitalScope !== 'combined') { labelNode.id = 'capital-rollup-label'; valueNode.id = 'capital-rollup-total'; }
+          if (totalLine) { labelNode.className = 'combined-total-label'; valueNode.className = 'combined-total-value'; }
+          summary.append(labelNode, valueNode);
+        }
+        if (capitalScope === 'combined') {
+          addLine('Personal subtotal', personalTotal, false);
+          addLine('Company subtotal', companyTotal, false);
+          addLine('Combined total', personalTotal + companyTotal, true);
+        } else addLine(capitalScope === 'company' ? 'Company capital' : (capitalRollupLabels[capitalRollupFilter] || 'Total capital'), capitalScope === 'company' ? companyTotal : personalTotal, false);
+      }
       function renderCapitalRollup() {
         var list = document.getElementById('capital-rollup-rows');
         var companyList = document.getElementById('capital-rollup-company');
-        if (!list || !companyList) return;
-        var rows = getCapitalRollupRows();
-        var visibleRows = rows.filter(function (row) { return capitalRollupFilter === 'all' || row.category === capitalRollupFilter; });
-        // Company / Mercury rows are deliberately excluded from personal totals and every filter sum.
-        var total = visibleRows.reduce(function (sum, row) { return sum + (typeof row.value === 'number' && Number.isFinite(row.value) ? row.value : 0); }, 0);
-        document.getElementById('capital-rollup-label').textContent = capitalRollupLabels[capitalRollupFilter] || 'Total capital';
-        document.getElementById('capital-rollup-total').textContent = formatMoney(total);
+        var filters = document.getElementById('capital-rollup-filters');
+        if (!list || !companyList || !filters) return;
+        var allPersonalRows = getCapitalRollupRows();
+        var companyRows = getCompanyCapitalRows();
+        var personalRows = allPersonalRows.filter(function (row) { return capitalRollupFilter === 'all' || row.category === capitalRollupFilter; });
+        var summaryPersonalRows = capitalScope === 'personal' ? personalRows : allPersonalRows;
+        var personalTotal = summaryPersonalRows.reduce(function (sum, row) { return sum + (typeof row.value === 'number' && Number.isFinite(row.value) ? row.value : 0); }, 0);
+        var companyTotal = companyRows.reduce(function (sum, row) { return sum + (typeof row.value === 'number' && Number.isFinite(row.value) ? row.value : 0); }, 0);
+        var note = document.getElementById('capital-rollup-note');
+        note.textContent = capitalScope === 'personal' ? 'Personal capital across every account. Company money is shown separately and never counted.' : (capitalScope === 'company' ? 'Company money. Never counted in personal net worth.' : 'Personal and company capital in one view. Company money remains excluded from personal net worth.');
+        filters.hidden = capitalScope !== 'personal';
+        setCapitalSummary(personalTotal, companyTotal);
         list.replaceChildren();
+        var visibleRows = capitalScope === 'company' ? companyRows : (capitalScope === 'combined' ? allPersonalRows.concat(companyRows) : personalRows);
         if (!visibleRows.length) {
-          var empty = document.createElement('p'); empty.className = 'capital-rollup-empty'; empty.textContent = capitalRollupFilter === 'manual' ? 'No manual capital entered.' : 'No accounts in this category.'; list.appendChild(empty);
-        } else visibleRows.forEach(function (row) { list.appendChild(buildCapitalRollupRow(row, false)); });
+          var empty = document.createElement('p'); empty.className = 'capital-rollup-empty'; empty.textContent = capitalScope === 'personal' && capitalRollupFilter === 'manual' ? 'No manual capital entered.' : 'No accounts in this category.'; list.appendChild(empty);
+        } else visibleRows.forEach(function (row) { list.appendChild(buildCapitalRollupRow(row, capitalScope === 'combined' && companyRows.indexOf(row) !== -1 ? 'combined' : (capitalScope === 'company' ? 'company' : false))); });
         companyList.replaceChildren();
-        getCompanyCapitalRows().forEach(function (row) { companyList.appendChild(buildCapitalRollupRow(row, true)); });
+        companyList.hidden = capitalScope !== 'personal';
+        if (capitalScope === 'personal') companyRows.forEach(function (row) { companyList.appendChild(buildCapitalRollupRow(row, 'separate')); });
       }
       function buildCommandAumRow(row, company) {
         var record = document.createElement('div');
@@ -155,6 +206,20 @@ function initDashboard() {
       }
       window.renderCapitalRollup = renderCapitalRollup;
       window.renderCommandAum = renderCommandAum;
+      function setCapitalScope(nextScope) {
+        capitalScope = ['personal', 'company', 'combined'].indexOf(nextScope) !== -1 ? nextScope : 'personal';
+        document.querySelectorAll('[data-capital-scope]').forEach(function (item) {
+          var active = item.dataset.capitalScope === capitalScope;
+          item.classList.toggle('active', active);
+          item.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        renderCapitalRollup();
+      }
+      document.getElementById('capital-scope-toggle').addEventListener('click', function (event) {
+        var button = event.target.closest('[data-capital-scope]');
+        if (!button) return;
+        setCapitalScope(button.dataset.capitalScope);
+      });
       document.getElementById('capital-rollup-filters').addEventListener('click', function (event) {
         var button = event.target.closest('[data-capital-filter]');
         if (!button) return;
@@ -164,6 +229,7 @@ function initDashboard() {
         });
         renderCapitalRollup();
       });
+      setCapitalScope('personal');
       document.getElementById('aum-filters').addEventListener('click', function (event) {
         var button = event.target.closest('[data-aum-filter]');
         if (!button) return;
@@ -232,27 +298,97 @@ function initDashboard() {
           document.getElementById('retirement-meta').textContent = (plaidRetirement.institution || 'Connected institution') + (plaidRetirement.asOf ? ' · as of ' + plaidRetirement.asOf : ' · linked retirement account');
           document.getElementById('retirement-mode-note').textContent = 'Plaid retirement data is active and takes precedence over the manual fallback values.';
         }
-        var balance = Math.max(0, Number(retirementInputs.balance.value) || 0);
+        var balance = retirementInputs.balance.value.trim() === '' ? null : Math.max(0, Number(retirementInputs.balance.value) || 0);
         var totalRate = Math.max(0, Number(retirementInputs.pretax.value) || 0) + Math.max(0, Number(retirementInputs.roth.value) || 0);
         document.getElementById('retirement-plan-display').textContent = retirementInputs.plan.value.trim() || 'Retirement plan';
-        document.getElementById('retirement-balance-display').textContent = formatMoney(balance);
+        document.getElementById('retirement-balance-display').textContent = balance === null ? 'Not entered' : formatMoney(balance);
         document.getElementById('retirement-total-rate').textContent = retirementPercent(totalRate) + ' per paycheck';
         renderCapitalRollup();
         renderCommandAum();
+        updateBalanceSheet();
       }
       Object.keys(retirementInputs).forEach(function (key) {
         if (retirementInputs[key]) retirementInputs[key].addEventListener('input', renderRetirementCapital);
       });
       renderRetirementCapital();
+      function additionalRetirementTotal() {
+        var roth = inputMoneyValue('roth-balance');
+        var fixedIncome = inputMoneyValue('fixed-income-balance');
+        return (roth === null ? 0 : roth) + (fixedIncome === null ? 0 : fixedIncome) + otherAccountEntries.reduce(function (sum, account) { return sum + account.value; }, 0);
+      }
+      function allRetirementTotal() {
+        var workplace = inputMoneyValue('retirement-balance');
+        return (workplace === null ? 0 : workplace) + additionalRetirementTotal();
+      }
+      function renderAdditionalRetirement() {
+        var roth = inputMoneyValue('roth-balance');
+        var fixedIncome = inputMoneyValue('fixed-income-balance');
+        document.getElementById('roth-balance-display').textContent = roth === null ? 'Not entered' : formatMoney(roth);
+        document.getElementById('fixed-income-balance-display').textContent = fixedIncome === null ? 'Not entered' : formatMoney(fixedIncome);
+        var list = document.getElementById('other-account-list');
+        list.replaceChildren();
+        if (!otherAccountEntries.length) {
+          var empty = document.createElement('li'); empty.className = 'empty-row'; empty.textContent = 'Not entered'; list.appendChild(empty);
+          document.getElementById('other-accounts-balance-display').textContent = 'Not entered';
+        } else {
+          var otherTotal = otherAccountEntries.reduce(function (sum, account) { return sum + account.value; }, 0);
+          document.getElementById('other-accounts-balance-display').textContent = formatMoney(otherTotal);
+          otherAccountEntries.forEach(function (account, index) {
+            var item = document.createElement('li');
+            var name = document.createElement('span'); name.textContent = account.name;
+            var value = document.createElement('strong'); value.textContent = formatMoney(account.value); value.className = 'positive';
+            var remove = document.createElement('button'); remove.type = 'button'; remove.className = 'tracker-remove'; remove.textContent = 'Remove';
+            remove.addEventListener('click', function () { otherAccountEntries.splice(index, 1); commitOtherAccounts(); });
+            item.append(name, value, remove); list.appendChild(item);
+          });
+        }
+        renderCapitalRollup();
+        renderCommandAum();
+        updateBalanceSheet();
+      }
+      function commitOtherAccounts() {
+        var state = document.getElementById('other-accounts-state');
+        state.value = JSON.stringify(otherAccountEntries);
+        state.dispatchEvent(new Event('input', { bubbles:true }));
+        renderAdditionalRetirement();
+      }
+      window.__otherAccountsImport = function (records) {
+        otherAccountEntries = (Array.isArray(records) ? records : []).map(function (record) {
+          return { name:String(record && record.name || '').trim(), value:Number(record && record.value) };
+        }).filter(function (record) { return record.name && Number.isFinite(record.value) && record.value >= 0; });
+        renderAdditionalRetirement();
+      };
+      document.getElementById('other-accounts-state').addEventListener('input', function (event) {
+        if (event.target.value === JSON.stringify(otherAccountEntries)) return;
+        try { window.__otherAccountsImport(event.target.value ? JSON.parse(event.target.value) : []); }
+        catch (error) { window.__otherAccountsImport([]); }
+      });
+      ['roth-balance', 'roth-custodian', 'roth-basis', 'fixed-income-balance', 'fixed-income-note'].forEach(function (id) {
+        document.getElementById(id).addEventListener('input', renderAdditionalRetirement);
+      });
+      document.getElementById('add-other-account').addEventListener('click', function () {
+        var name = document.getElementById('other-account-name');
+        var value = document.getElementById('other-account-value');
+        var amount = Number(value.value);
+        if (!name.value.trim() || value.value.trim() === '' || !Number.isFinite(amount) || amount < 0) return;
+        otherAccountEntries.push({ name:name.value.trim(), value:amount });
+        name.value = ''; value.value = ''; commitOtherAccounts();
+      });
+      try {
+        var otherState = document.getElementById('other-accounts-state').value;
+        window.__otherAccountsImport(otherState ? JSON.parse(otherState) : []);
+      } catch (error) { window.__otherAccountsImport([]); }
       function updateBalanceSheet() {
         var panel = document.getElementById('manual-assets-panel');
         var baseAssets = Number(panel.dataset.baseAssets);
         var baseLiabilities = Number(panel.dataset.baseLiabilities);
+        var retirementAssetValue = allRetirementTotal();
+        var trackedAssets = baseAssets + retirementAssetValue;
         var manualAssetValue = manualAssets.reduce(function (sum, asset) { return sum + (asset.value > 0 ? asset.value : 0); }, 0);
         var manualDebtValue = manualAssets.reduce(function (sum, asset) { return sum + (asset.value < 0 ? Math.abs(asset.value) : 0); }, 0);
         var apple = document.getElementById('apple-balance');
         var appleValue = Math.max(Number(apple.value) || Number(apple.min), Number(apple.min));
-        var assets = baseAssets + manualAssetValue;
+        var assets = trackedAssets + manualAssetValue;
         var liabilities = baseLiabilities + appleValue + manualDebtValue;
         var net = assets - liabilities;
         var netLabel = (net < 0 ? '−' : '+') + formatMoney(Math.abs(net));
@@ -267,7 +403,7 @@ function initDashboard() {
         document.getElementById('command-net-worth').classList.toggle('positive', net >= 0);
         document.getElementById('apple-balance-display').textContent = appleValue ? formatMoney(appleValue) + ' owed' : 'Not entered';
         document.getElementById('flow-total-debt').textContent = formatMoney(liabilities);
-        document.getElementById('flow-linked-assets-label').textContent = formatMoney(baseAssets);
+        document.getElementById('flow-linked-assets-label').textContent = formatMoney(trackedAssets);
         document.getElementById('flow-manual-assets-label').textContent = formatMoney(manualAssetValue);
         document.getElementById('flow-assets-label').textContent = formatMoney(assets);
         document.getElementById('flow-apple-label').textContent = formatMoney(appleValue);
@@ -280,7 +416,7 @@ function initDashboard() {
         document.getElementById('flow-manual-debt-items').textContent = manualDebtNames.length ? manualDebtNames.join(' · ') : 'None entered';
         document.getElementById('flow-manual-asset-items').textContent = manualAssetNames.length ? manualAssetNames.join(' · ') : 'None entered';
         var flowNodeValues = {
-          'tracked-assets': formatMoney(baseAssets), 'manual-assets': formatMoney(manualAssetValue),
+          'tracked-assets': formatMoney(trackedAssets), 'manual-assets': formatMoney(manualAssetValue),
           'assets-total': formatMoney(assets), 'linked-debt': formatMoney(baseLiabilities),
           'apple-debt': appleValue ? formatMoney(appleValue) : 'Not entered',
           'manual-debt': formatMoney(manualDebtValue), 'total-debt': formatMoney(liabilities), 'networth': netLabel
@@ -451,7 +587,7 @@ function initDashboard() {
         row.addEventListener('click', function () {
           var cells = row.querySelectorAll('td');
           var symbol = row.querySelector('.ticker').textContent;
-          var now = parseMoney(cells[1].textContent);
+          var now = parseMoney(cells[2].textContent);
           var entry = parseMoney(cells[3].textContent);
           var change = now - entry;
           var percentInput = document.querySelector('.plan-debt');
@@ -560,7 +696,7 @@ function initDashboard() {
         if (trading && !card.querySelector('.schwab-trade')) {
           var links = document.createElement('div'); links.className = 'watch-links';
           trading.parentNode.insertBefore(links, trading); links.appendChild(trading);
-          var schwab = document.createElement('a'); schwab.className = 'schwab-trade'; schwab.href = 'https://client.schwab.com/'; schwab.target = '_blank'; schwab.rel = 'noreferrer'; schwab.textContent = 'Trade'; links.appendChild(schwab);
+          var schwab = document.createElement('a'); schwab.className = 'schwab-trade'; schwab.href = 'https://client.schwab.com/'; schwab.target = '_blank'; schwab.rel = 'noreferrer'; schwab.textContent = 'Schwab trade'; links.appendChild(schwab);
         }
         if (!card.querySelector('.add-plan')) {
           var planButton = document.createElement('button'); planButton.className = 'add-plan'; planButton.type = 'button'; planButton.textContent = 'Add to plan'; card.appendChild(planButton);
@@ -1035,6 +1171,25 @@ function initDashboard() {
         { label:'1601 Walnut', address:'1601 Walnut St', locality:'Philadelphia', region:'PA', lat:39.95000, lng:-75.16769, size:'~1,500 SF', rent:'~$3,250/mo', fit:'Tight · ~125 SF/person', link:'https://www.google.com/maps/search/?api=1&query=1601%20Walnut%2C%201601%20Walnut%20St%2C%20Philadelphia%2C%20PA' }
       ];
       var officeMapInstance = null;
+      var officeMapMarkers = [];
+      function showOfficeMapFallback() {
+        var mapElement = document.getElementById('office-map');
+        if (officeMapInstance) { officeMapInstance.remove(); officeMapInstance = null; }
+        officeMapMarkers = [];
+        mapElement.innerHTML = '<div class="map-fallback">Interactive map unavailable. Use the eight property cards and their building links below.</div>';
+      }
+      function setOfficeMapSelection(index) {
+        officeMapMarkers.forEach(function (marker, markerIndex) {
+          var selected = markerIndex === index;
+          marker.setIcon(L.divIcon({
+            className:'office-pin-icon',
+            html:'<div class="pin' + (selected ? ' pin--on' : '') + '">' + (markerIndex + 1) + '</div>',
+            iconSize:[34, 30],
+            iconAnchor:[17, 15]
+          }));
+          if (selected) marker.setZIndexOffset(1000); else marker.setZIndexOffset(0);
+        });
+      }
       function selectOffice(index, scroll) {
         if (index === null || index < 0 || index >= officePlaces.length) {
           document.querySelectorAll('.office-card').forEach(function (card) { card.classList.remove('map-selected'); });
@@ -1057,37 +1212,36 @@ function initDashboard() {
       function initOfficeMap() {
         if (officeMapInstance || !document.getElementById('career').classList.contains('active')) return;
         var mapElement = document.getElementById('office-map');
-        if (!window.L) {
-          mapElement.innerHTML = '<div class="map-fallback">Interactive map unavailable. Use the eight property cards and their building links below.</div>';
-          return;
-        }
-        var dark = document.documentElement.getAttribute('data-theme') !== 'ivory';
-        var map = L.map(mapElement, { scrollWheelZoom: false }).setView([39.9495, -75.1675], 15);
-        L.tileLayer(dark
-          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-          : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-          { attribution: 'Esri', maxZoom: 19 }).addTo(map);
-        var markers = officePlaces.map(function (place, index) {
-          var icon = L.divIcon({ className: 'office-pin', html: '<div class="pin">' + (index + 1) + '</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
-          var marker = L.marker([place.lat, place.lng], { icon: icon }).addTo(map);
-          marker.on('click', function () { officeMapInstance.selectPlace(index); selectOffice(index, false); });
-          return marker;
-        });
-        officeMapInstance = {
-          selectPlace: function (index) {
-            markers.forEach(function (m, i) {
-              var el = m.getElement();
-              if (el) { var pin = el.querySelector('.pin'); if (pin) pin.classList.toggle('pin--on', i === index); }
-            });
-            var p = officePlaces[index];
-            if (p) map.panTo([p.lat, p.lng]);
-          }
-        };
-        officeMapInstance.selectPlace(0);
-        selectOffice(0, false);
+        if (!window.L) { showOfficeMapFallback(); return; }
+        try {
+          mapElement.innerHTML = '';
+          officeMapInstance = L.map(mapElement, { scrollWheelZoom:false, zoomControl:true });
+          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom:16,
+            attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
+          }).addTo(officeMapInstance);
+          var bounds = [];
+          officeMapMarkers = officePlaces.map(function (place, index) {
+            var latLng = [place.lat, place.lng];
+            bounds.push(latLng);
+            var marker = L.marker(latLng, {
+              icon:L.divIcon({ className:'office-pin-icon', html:'<div class="pin">' + (index + 1) + '</div>', iconSize:[34,30], iconAnchor:[17,15] }),
+              title:place.label,
+              keyboard:true
+            }).addTo(officeMapInstance);
+            marker.on('click', function () { setOfficeMapSelection(index); selectOffice(index, true); });
+            return marker;
+          });
+          officeMapInstance.fitBounds(bounds, { padding:[42,42], maxZoom:15 });
+          officeMapInstance.on('tileerror', function () {
+            if (!mapElement.querySelector('.leaflet-tile-loaded')) showOfficeMapFallback();
+          });
+          setOfficeMapSelection(0);
+          selectOffice(0, false);
+        } catch (_error) { showOfficeMapFallback(); }
       }
       document.querySelectorAll('.office-card').forEach(function (card) {
-        function choose() { var index = Number(card.getAttribute('data-office-index')); if (officeMapInstance) officeMapInstance.selectPlace(index); selectOffice(index, false); }
+        function choose() { var index = Number(card.getAttribute('data-office-index')); if (officeMapInstance) setOfficeMapSelection(index); selectOffice(index, false); }
         card.addEventListener('click', choose);
         card.addEventListener('keydown', function (event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(); } });
       });
@@ -1411,5 +1565,6 @@ function hook(){
 try{restore();}catch(e){}
 try{hook();}catch(e){}
 })();
+
 
 }
