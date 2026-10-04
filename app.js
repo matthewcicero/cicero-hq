@@ -75,6 +75,14 @@ function initDashboard() {
         });
       }
       renderConnectedAccounts(inventoryAccounts);
+      // 401(k) balance flows into net worth: recalc when retirement inputs change
+      ['retirement-plan','retirement-balance','retirement-pretax','retirement-roth','retirement-allocation'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', function(){ try { updateBalanceSheet(); } catch(e){} });
+          el.addEventListener('change', function(){ try { updateBalanceSheet(); } catch(e){} });
+        }
+      });
       var retirementInputs = {
         plan: document.getElementById('retirement-plan'),
         balance: document.getElementById('retirement-balance'),
@@ -122,7 +130,9 @@ function initDashboard() {
         var manualDebtValue = manualAssets.reduce(function (sum, asset) { return sum + (asset.value < 0 ? Math.abs(asset.value) : 0); }, 0);
         var apple = document.getElementById('apple-balance');
         var appleValue = Math.max(Number(apple.value) || Number(apple.min), Number(apple.min));
-        var assets = baseAssets + manualAssetValue;
+        var retirementBalanceEl = document.getElementById('retirement-balance');
+        var retirementValue = retirementBalanceEl ? (Number(retirementBalanceEl.value) || 0) : 0;
+        var assets = baseAssets + manualAssetValue + retirementValue;
         var liabilities = baseLiabilities + appleValue + manualDebtValue;
         var net = assets - liabilities;
         var netLabel = (net < 0 ? '−' : '+') + formatMoney(Math.abs(net));
@@ -1103,6 +1113,14 @@ function hook(){
 
   // talent pipeline: persist the canonical JSON block; restore into the
   // page's own records (shim is folded into initDashboard, same scope).
+  // Bulletproof: wrap commitTalent so EVERY add/edit/delete forces a save,
+  // in addition to the MutationObserver (belt and suspenders).
+  function persistTalentNow(){
+    try {
+      var blk = document.getElementById("talent-data");
+      if (blk) { S.talent = JSON.parse(blk.textContent || "[]"); save(); }
+    } catch(e){}
+  }
   var talentBlock = document.getElementById("talent-data");
   if (talentBlock) {
     new MutationObserver(function(){
@@ -1118,6 +1136,15 @@ function hook(){
       }
     }
   }
+  try {
+    if (typeof commitTalent === "function") {
+      var _origCommitTalent = commitTalent;
+      commitTalent = function(){ _origCommitTalent(); persistTalentNow(); };
+    }
+  } catch(e){}
+  try {
+    window.addEventListener("beforeunload", persistTalentNow);
+  } catch(e){}
 
 try{restore();}catch(e){}
 try{hook();}catch(e){}
