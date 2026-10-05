@@ -1454,8 +1454,8 @@
   }
   // Cache-busting: the vault is re-encrypted on every deploy (new salt), so a
   // cached vault.json would fail PIN unlock with a confusing "Wrong PIN".
-  // 0c1b3725fbf2 is replaced at build time with a hash of the vault data.
-  fetch("vault.json?v=0c1b3725fbf2").then(function (r) {
+  // 4e62e67ab712 is replaced at build time with a hash of the vault data.
+  fetch("vault.json?v=4e62e67ab712").then(function (r) {
     if (!r.ok) throw new Error("vault.json missing");
     return r.json();
   }).then(start).catch(function () {
