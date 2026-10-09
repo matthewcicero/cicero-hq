@@ -69,7 +69,7 @@ function initDashboard() {
         var type = String(account.type || 'account').toLowerCase();
         if (type === 'checking' || type === 'savings' || type === 'depository' || type === 'business checking') return 'cash';
         if (institution === 'schwab' && type === 'brokerage') return 'brokerage';
-        if (institution === 'coinbase' && type === 'crypto') return 'crypto';
+        if (type === 'crypto') return 'crypto';
         if (/(401\s*\(?k\)?|retire|pension|\bira\b)/.test([institution, account.name, type].join(' '))) return 'retirement';
         return '';
       }
@@ -187,10 +187,10 @@ function initDashboard() {
       }
       function renderCommandAum() {
         var list = document.getElementById('aum-breakdown');
-        var companyList = document.getElementById('aum-company');
-        if (!list || !companyList) return;
+        if (!list) return;
         var rows = getCapitalRollupRows();
-        var visibleRows = rows.filter(function (row) { return commandAumFilter === 'all' || row.category === commandAumFilter; });
+        var investedCategories = ['cash', 'brokerage', 'crypto', 'retirement'];
+        var visibleRows = rows.filter(function (row) { return commandAumFilter === 'all' ? investedCategories.indexOf(row.category) !== -1 : row.category === commandAumFilter; });
         var total = visibleRows.reduce(function (sum, row) { return sum + (typeof row.value === 'number' && Number.isFinite(row.value) ? row.value : 0); }, 0);
         document.getElementById('aum-filter-label').textContent = commandAumLabels[commandAumFilter] || 'All';
         document.getElementById('aum-total').textContent = formatMoney(total);
@@ -201,8 +201,7 @@ function initDashboard() {
           empty.textContent = commandAumFilter === 'manual' ? 'No manual capital entered.' : 'No accounts in this category.';
           list.appendChild(empty);
         } else visibleRows.forEach(function (row) { list.appendChild(buildCommandAumRow(row, false)); });
-        companyList.replaceChildren();
-        getCompanyCapitalRows().forEach(function (row) { companyList.appendChild(buildCommandAumRow(row, true)); });
+
       }
       window.renderCapitalRollup = renderCapitalRollup;
       window.renderCommandAum = renderCommandAum;
@@ -387,7 +386,8 @@ function initDashboard() {
         var manualAssetValue = manualAssets.reduce(function (sum, asset) { return sum + (asset.value > 0 ? asset.value : 0); }, 0);
         var manualDebtValue = manualAssets.reduce(function (sum, asset) { return sum + (asset.value < 0 ? Math.abs(asset.value) : 0); }, 0);
         var apple = document.getElementById('apple-balance');
-        var appleValue = Math.max(Number(apple.value) || Number(apple.min), Number(apple.min));
+        var appleEntered = apple.value.trim() !== '';
+        var appleValue = appleEntered ? Math.max(Number(apple.value) || Number(apple.min), Number(apple.min)) : 0;
         var assets = trackedAssets + manualAssetValue;
         var liabilities = baseLiabilities + appleValue + manualDebtValue;
         var net = assets - liabilities;
@@ -401,16 +401,16 @@ function initDashboard() {
         document.getElementById('command-net-worth').textContent = netLabel;
         document.getElementById('command-net-worth').classList.toggle('negative', net < 0);
         document.getElementById('command-net-worth').classList.toggle('positive', net >= 0);
-        document.getElementById('apple-balance-display').textContent = appleValue ? formatMoney(appleValue) + ' owed' : 'Not entered';
+        document.getElementById('apple-balance-display').textContent = appleEntered ? formatMoney(appleValue) + ' owed' : 'Not entered';
         document.getElementById('flow-total-debt').textContent = formatMoney(liabilities);
         document.getElementById('flow-linked-assets-label').textContent = formatMoney(trackedAssets);
         document.getElementById('flow-manual-assets-label').textContent = formatMoney(manualAssetValue);
         document.getElementById('flow-assets-label').textContent = formatMoney(assets);
-        document.getElementById('flow-apple-label').textContent = formatMoney(appleValue);
+        document.getElementById('flow-apple-label').textContent = appleEntered ? formatMoney(appleValue) : 'Not entered';
         document.getElementById('flow-manual-debt-label').textContent = formatMoney(manualDebtValue);
         document.getElementById('flow-debt-label').textContent = formatMoney(liabilities);
         document.getElementById('flow-networth-label').textContent = netLabel;
-        document.getElementById('flow-apple-summary').textContent = formatMoney(appleValue);
+        document.getElementById('flow-apple-summary').textContent = appleEntered ? formatMoney(appleValue) : 'Not entered';
         document.getElementById('flow-manual-debt-summary').textContent = formatMoney(manualDebtValue);
         document.getElementById('flow-manual-assets-summary').textContent = formatMoney(manualAssetValue);
         document.getElementById('flow-manual-debt-items').textContent = manualDebtNames.length ? manualDebtNames.join(' · ') : 'None entered';
@@ -418,7 +418,7 @@ function initDashboard() {
         var flowNodeValues = {
           'tracked-assets': formatMoney(trackedAssets), 'manual-assets': formatMoney(manualAssetValue),
           'assets-total': formatMoney(assets), 'linked-debt': formatMoney(baseLiabilities),
-          'apple-debt': appleValue ? formatMoney(appleValue) : 'Not entered',
+          'apple-debt': appleEntered ? formatMoney(appleValue) : 'Not entered',
           'manual-debt': formatMoney(manualDebtValue), 'total-debt': formatMoney(liabilities), 'networth': netLabel
         };
         Object.keys(flowNodeValues).forEach(function (key) {
